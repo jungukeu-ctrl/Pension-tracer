@@ -367,11 +367,11 @@
 
   <!-- GAS URL 미설정 시 배너 -->
   <div class="settings-banner" id="gas-url-banner" style="display:none">
-    <h3>⚙️ MyAssetDashBD 연동 설정 필요</h3>
-    <p>자동 불러오기 기능을 사용하려면 Google Apps Script(GAS) Endpoint URL을 입력하세요.<br>
-       MyAssetDashBD 설정 페이지 → <code>pension_gas_url</code> 값을 복사해 붙여넣으세요.</p>
+    <h3>⚙️ MyAssetDashBD 연동 설정</h3>
+    <p>다른 Firebase 프로젝트를 사용하는 경우 아래에 Firebase Realtime Database URL을 입력하세요.<br>
+       기본 URL이 이미 설정되어 있으며, 변경이 필요한 경우에만 입력하세요.</p>
     <div class="url-input-row">
-      <input type="url" id="banner-gas-url" placeholder="https://script.google.com/macros/s/.../exec" />
+      <input type="url" id="banner-gas-url" placeholder="https://your-project-default-rtdb.firebasedatabase.app" />
       <button class="btn btn-primary" onclick="saveBannerGasUrl()">저장</button>
     </div>
   </div>
@@ -388,7 +388,7 @@
   <div class="sync-row">
     <div class="sync-info">
       <strong>📥 MyAssetDashBD 자동 연동</strong>
-      <p>GAS endpoint에서 연금·투자 잔액을 자동으로 불러옵니다 (5개 항목)</p>
+      <p>Firebase Realtime Database에서 연금·투자 잔액을 자동으로 불러옵니다 (5개 항목)</p>
     </div>
     <span id="sync-status" class="status-idle">대기중</span>
     <button class="btn btn-primary" id="btn-sync" onclick="loadFromMyAssetDashBD()">
@@ -587,15 +587,15 @@
     <h2>⚙️ 설정</h2>
     <div class="settings-body">
       <div class="settings-field">
-        <label>GAS Endpoint URL (MyAssetDashBD 연동)</label>
+        <label>Firebase Realtime Database URL (MyAssetDashBD 연동)</label>
         <div class="url-input-row">
-          <input type="url" id="settings-gas-url" placeholder="https://script.google.com/macros/s/.../exec" />
+          <input type="url" id="settings-gas-url" placeholder="https://your-project-default-rtdb.firebasedatabase.app" />
           <button class="btn btn-primary" onclick="saveSettingsGasUrl()">저장</button>
-          <button class="btn btn-secondary" onclick="clearGasUrl()">초기화</button>
+          <button class="btn btn-secondary" onclick="clearGasUrl()">기본값으로</button>
         </div>
         <p class="helper">
-          MyAssetDashBD 사이트의 localStorage에서 <code>pension_gas_url</code> 값을 복사해 붙여넣으세요.<br>
-          브라우저 개발자도구 → Application → Local Storage → <code>pension_gas_url</code>
+          기본값: <code>https://my-asset-dashboard-9e6f9-default-rtdb.asia-southeast1.firebasedatabase.app</code><br>
+          데이터는 <code>/asset-data.json</code> 엔드포인트에서 읽습니다. Firebase 프로젝트가 다른 경우에만 변경하세요.
         </p>
       </div>
     </div>
@@ -607,10 +607,12 @@
 // ============================================================
 //  Constants & Helpers
 // ============================================================
-const STORAGE_KEY   = 'pension-tracker-v1';
-const GAS_URL_KEY   = 'pension_gas_url';
+const STORAGE_KEY    = 'pension-tracker-v1';
+const FB_URL_KEY     = 'firebase_url';
+// MyAssetDashBD의 공개 Firebase Realtime Database URL (기본값)
+const FB_URL_DEFAULT = 'https://my-asset-dashboard-9e6f9-default-rtdb.asia-southeast1.firebasedatabase.app';
 
-const AUTO_FIELDS = ['f_pension', 'f_irp1', 'f_irp2', 'f_overseas', 'f_ria'];
+const AUTO_FIELDS   = ['f_pension', 'f_irp1', 'f_irp2', 'f_overseas', 'f_ria'];
 const MANUAL_FIELDS = ['f_isa', 'f_c_pension', 'f_c_irp', 'f_voo_sold', 'f_voo_gain_ytd', 'f_tax'];
 
 function fmt(n) {
@@ -618,12 +620,12 @@ function fmt(n) {
   return Number(n).toLocaleString('ko-KR') + '원';
 }
 
-function getGasUrl() {
-  return localStorage.getItem(GAS_URL_KEY) || '';
+function getFirebaseUrl() {
+  return localStorage.getItem(FB_URL_KEY) || FB_URL_DEFAULT;
 }
 
-function setGasUrl(url) {
-  localStorage.setItem(GAS_URL_KEY, url.trim());
+function setFirebaseUrl(url) {
+  localStorage.setItem(FB_URL_KEY, url.trim());
 }
 
 function getAllRecords() {
@@ -647,12 +649,11 @@ window.addEventListener('DOMContentLoaded', () => {
   const ym = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
   document.getElementById('input-month').value = ym;
 
-  // Show/hide GAS URL banner
-  checkGasUrlBanner();
+  // Show/hide Firebase URL banner
+  checkFirebaseUrlBanner();
 
-  // Populate settings URL field
-  const saved = getGasUrl();
-  if (saved) document.getElementById('settings-gas-url').value = saved;
+  // Populate settings URL field (show current or default)
+  document.getElementById('settings-gas-url').value = getFirebaseUrl();
 
   // Load existing data for this month if any
   loadMonthData();
@@ -665,39 +666,33 @@ window.addEventListener('DOMContentLoaded', () => {
 });
 
 // ============================================================
-//  GAS URL Banner
+//  Firebase URL Banner (기본 URL이 있으므로 커스텀 URL 입력 시에만 배너 표시)
 // ============================================================
-function checkGasUrlBanner() {
-  const banner = document.getElementById('gas-url-banner');
-  if (!getGasUrl()) {
-    banner.style.display = 'block';
-  } else {
-    banner.style.display = 'none';
-  }
+function checkFirebaseUrlBanner() {
+  // 기본 URL이 있으므로 배너는 항상 숨김 (설정 섹션에서 변경 가능)
+  document.getElementById('gas-url-banner').style.display = 'none';
 }
 
 function saveBannerGasUrl() {
   const val = document.getElementById('banner-gas-url').value.trim();
   if (!val) { alert('URL을 입력해주세요.'); return; }
-  setGasUrl(val);
+  setFirebaseUrl(val);
   document.getElementById('settings-gas-url').value = val;
-  checkGasUrlBanner();
   setSyncStatus('success', '✅ URL 저장됨');
 }
 
 function saveSettingsGasUrl() {
   const val = document.getElementById('settings-gas-url').value.trim();
   if (!val) { alert('URL을 입력해주세요.'); return; }
-  setGasUrl(val);
-  checkGasUrlBanner();
-  setSyncStatus('success', '✅ URL 저장됨');
+  setFirebaseUrl(val);
+  setSyncStatus('success', '✅ Firebase URL 저장됨');
 }
 
 function clearGasUrl() {
-  if (!confirm('GAS URL을 삭제하시겠습니까?')) return;
-  localStorage.removeItem(GAS_URL_KEY);
-  document.getElementById('settings-gas-url').value = '';
-  checkGasUrlBanner();
+  if (!confirm('커스텀 Firebase URL을 삭제하고 기본값으로 되돌리겠습니까?')) return;
+  localStorage.removeItem(FB_URL_KEY);
+  document.getElementById('settings-gas-url').value = FB_URL_DEFAULT;
+  setSyncStatus('idle', '대기중');
 }
 
 // ============================================================
@@ -713,50 +708,45 @@ function setSyncStatus(type, text) {
 //  loadFromMyAssetDashBD  ← 핵심 함수
 // ============================================================
 async function loadFromMyAssetDashBD() {
-  const gasUrl = getGasUrl();
-  if (!gasUrl) {
-    setSyncStatus('error', '❌ GAS URL 미설정');
-    document.getElementById('gas-url-banner').style.display = 'block';
-    document.getElementById('settings-section').scrollIntoView({ behavior: 'smooth' });
-    return;
-  }
+  const fbBase = getFirebaseUrl().replace(/\/$/, '');
+  const url = `${fbBase}/asset-data.json`;
 
   const btn = document.getElementById('btn-sync');
   btn.disabled = true;
   setSyncStatus('loading', '⏳ 불러오는 중…');
 
   try {
-    // GAS endpoint — try ?action=read first, fallback to bare URL
-    const url = gasUrl.includes('?') ? gasUrl + '&action=read' : gasUrl + '?action=read';
-    const res = await fetch(url, { method: 'GET', mode: 'cors' });
+    const res = await fetch(url, { method: 'GET' });
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
 
-    const raw = await res.text();
-    let data;
-    try { data = JSON.parse(raw); } catch { throw new Error('JSON 파싱 실패'); }
+    const data = await res.json();
+    if (!data) throw new Error('Firebase에 저장된 데이터가 없습니다');
 
     applyDashboardData(data);
 
   } catch (err) {
-    console.error('[Pension Tracker] GAS 호출 실패:', err);
-    setSyncStatus('error', `❌ 실패: ${err.message}`);
-    showFallbackNotice(err.message);
+    console.error('[Pension Tracker] Firebase 호출 실패:', err);
+    // Firebase 공개 DB는 CORS를 허용하므로, 실패 시 URL 또는 네트워크 문제
+    const hint = err.message.includes('Failed to fetch')
+      ? '네트워크 오류 또는 Firebase URL이 올바르지 않습니다'
+      : err.message;
+    setSyncStatus('error', `❌ 실패: ${hint}`);
+    showFallbackNotice(hint);
   } finally {
     btn.disabled = false;
   }
 }
 
 // ============================================================
-//  applyDashboardData  — GAS 응답 → 폼 채우기
+//  applyDashboardData  — Firebase 응답 → 폼 채우기
 // ============================================================
 function applyDashboardData(data) {
-  // Normalise: GAS may return wrapped { data: {...} } or flat object
-  const d = data?.data ?? data;
+  // Firebase 응답 구조: { state: { 'pension-saving': { val, date }, ... }, kiwoom: {...} }
+  const state = data.state || {};
 
-  // Key extraction helpers
+  // Key extraction helper
   function getField(key) {
-    // Support both {val, date} shape and raw number
-    const v = d[key];
+    const v = state[key];
     if (v === null || v === undefined) return null;
     if (typeof v === 'object' && 'val' in v) return v;
     if (typeof v === 'number') return { val: v, date: null };
@@ -807,7 +797,7 @@ function applyDashboardData(data) {
     setSyncStatus('success', `✅ ${successCount}개 항목 불러옴`);
   } else {
     setSyncStatus('error', '❌ 데이터 없음');
-    showFallbackNotice('응답에서 데이터를 찾을 수 없습니다. GAS 응답 구조를 확인해주세요.');
+    showFallbackNotice('Firebase 응답에서 state 데이터를 찾을 수 없습니다. MyAssetDashBD에서 동기화 후 재시도하세요.');
   }
 }
 
@@ -836,7 +826,7 @@ function showFallbackNotice(reason) {
   const warn = document.getElementById('date-warning');
   warn.innerHTML = `⚠️ 자동 불러오기 실패 (${reason})<br>
     수동 입력 모드로 전환합니다. 아래 강조된 항목을 직접 입력해주세요.<br>
-    GAS URL 설정이 올바른지 확인하거나 페이지 하단 <strong>설정</strong> 섹션에서 URL을 업데이트하세요.`;
+    Firebase URL이 올바른지 확인하거나 페이지 하단 <strong>설정</strong> 섹션에서 URL을 업데이트하세요.`;
   warn.style.display = 'block';
   // Mark all auto fields as needing manual input
   AUTO_FIELDS.forEach(id => {
