@@ -14,13 +14,14 @@ asset-data/
     irp1:            { val: number(만원) }                     ← IRP1 누적투자금
     irp2:            { val: number(만원) }                     ← IRP2 누적투자금
     kiwoom-overseas: { val: number(원), date: "YYYY-MM-DD" }  ← 해외주식 잔액
-    kiwoom-obil:     { val: number(원), date: "YYYY-MM-DD" }  ← OBil 잔액
+    kiwoom-obil:     { val: number(원), date: "YYYY-MM-DD" }  ← OBil 잔액 (RIA와 완전 별개 계좌)
     toss-*:          { val, date }
     ...
     ← ISA 없음, RIA 없음
   kiwoom/
     combined: [
       { month: "YYYY-MM", date: "YYYY-MM-DD", eval: [...], invest: [...] }
+      ← eval[] = 월별 평가금액(잔액)
       ← invest[3] = 연금저축 누적투자금 (이체내역 모달로 관리)
     ]
   todos: [...]
@@ -30,10 +31,20 @@ asset-data/
 ### 현재 Pension-tracer 한계
 - localStorage에만 월별 실적 저장 (브라우저 종속)
 - ISA 잔액 자동 연동 없음 (수동 입력만)
-- RIA 잔액 = `kiwoom-obil` 로 맵핑 (실제 RIA 계정 없음)
+- RIA 잔액 = `kiwoom-obil` 로 잘못 맵핑됨 → **OBil과 RIA는 완전히 별개 계좌**, 분리 필요
 - PLAN_DATA 하드코딩 없음 (계획 vs 실적 비교 기능 없음)
 - 납입 이력 Firebase 미연동 (입력 후 사라짐)
 - UI 단순 입력폼 수준 → 완전 재구축 필요
+
+### 용어 정의
+
+| 용어 | 의미 | 비고 |
+|------|------|------|
+| **잔액 = 평가금액** | 현재 계좌 가치 (원금 + 미실현 수익) | 동일 개념, 혼용 가능 |
+| **납입액** | 해당 월에 실제로 납입한 금액 | 원금만, 수익 미포함 |
+| **누적투자금** | 지금까지 납입한 원금 합계 | `invest[]` 기준 |
+| **OBil** | 키움 OBil 계좌 (`kiwoom-obil`) | RIA와 완전 별개 계좌 |
+| **RIA** | RIA 별도 계좌 (`ria`) | OBil과 완전 별개 계좌, 신규 추가 |
 
 ---
 
