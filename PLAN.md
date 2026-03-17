@@ -30,7 +30,7 @@ asset-data/
 ### 현재 Pension-tracer 한계
 - localStorage에만 월별 실적 저장 (브라우저 종속)
 - ISA 잔액 자동 연동 없음 (수동 입력만)
-- RIA 잔액 = `kiwoom-obil` 로 맵핑 (실제 RIA 계정 없음)
+- RIA 잔액 = `kiwoom-obil` 로 맵핑 (실제 RIA 계정 없음) // RIA는  `kiwoom-obil`아님!! 새로 추가해야 하는 계좌
 - PLAN_DATA 하드코딩 없음 (계획 vs 실적 비교 기능 없음)
 - 납입 이력 Firebase 미연동 (입력 후 사라짐)
 - UI 단순 입력폼 수준 → 완전 재구축 필요
@@ -224,7 +224,7 @@ loadFromFirebase()
 ## 7. 결정 필요 사항 (구현 전 확인)
 
 - [ ] **ISA 계좌명**: MyAssetDashBD에서 어떤 이름으로 표시? (예: `ISA (삼성증권)`)
-- [ ] **RIA 계좌명**: `RIA (키움)` vs `RIA/OBil` — OBil과 완전히 별개로 볼 것인가?
-- [ ] **PLAN_DATA 초기값**: 첫 실행 시 계획 데이터가 없으면 기본값 제공할 것인가?
+- [ ] **RIA 계좌명**: `RIA (키움)` vs `RIA/OBil` — OBil과 완전히 별개로 볼 것인가? //완전히 별개의 계좌임
+- [ ] **PLAN_DATA 초기값**: 첫 실행 시 계획 데이터가 없으면 기본값 제공할 것인가? //기본 계획값 제공
 - [ ] **연금저축 납입 자동 계산**: `kiwoom.combined`에 이체내역이 없는 월은 0으로 처리?
 - [ ] **Firebase 쓰기 권한**: 현재 Firebase Rules가 `asset-data/pension-tracker/**` PATCH 허용하는가?
