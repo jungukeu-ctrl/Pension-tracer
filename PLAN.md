@@ -22,7 +22,8 @@ asset-data/
     combined: [
       { month: "YYYY-MM", date: "YYYY-MM-DD", eval: [...], invest: [...] }
       ← eval[] = 월별 평가금액(잔액)
-      ← invest[3] = 연금저축 누적투자금 (이체내역 모달로 관리)
+      ← invest[3] = 연금저축 누적투자금 (💰 삼성증권종합잔고거래내역 JSON → Gemini 변환 경로로 입력)
+      ← invest[] 다른 인덱스에 IRP1 누적투자금이 있는지 확인 필요 → 있으면 IRP도 자동 계산 가능
     ]
   todos: [...]
   goal: { name, target, finName, finTarget }
@@ -36,6 +37,14 @@ asset-data/
   - RIA 계좌는 **아직 개설 전** (예정일: 2026-03-30)
   - 따라서 현재 UI에 표시되는 RIA 잔액(약 2,914만원)은 실제로는 OBil 잔액임 — 무시할 것
   - 수정 방향: OBil은 Pension-tracer에서 완전 제외, RIA는 개설 후 `state.ria` 키로 별도 연동
+- **[설계 재검토 필요]** IRP1 납입 수동 입력 모달이 불필요할 수 있음
+  - 연금저축 거래내역(이체입금)은 이미 💰 삼성증권종합잔고거래내역 → Gemini → JSON 경로로 MyAssetDashBD에 입력됨
+  - 이 JSON이 `kiwoom.combined[].invest[3]` 누적값으로 저장되고 있으며, Pension-tracer는 이미 월간 델타로 연금저축 납입을 자동 계산
+  - IRP1도 삼성증권 계좌이므로 동일한 거래내역 JSON에 포함되어 있을 가능성 있음
+  - **확인 필요**: `kiwoom.combined[].invest[]` 배열의 전체 인덱스 구조 (IRP1이 어느 인덱스?)
+    - invest[3] = 연금저축 (확인됨)
+    - invest[?] = IRP1 누적투자금 → 있으면 IRP 납입도 델타 자동 계산으로 대체 가능
+  - 만약 IRP1도 자동 계산 가능하다면: IRP 납입 입력 모달 제거, 수동 입력 제거
 - PLAN_DATA 하드코딩 없음 (계획 vs 실적 비교 기능 없음)
 - 납입 이력 Firebase 미연동 (입력 후 사라짐)
 - UI 단순 입력폼 수준 → 완전 재구축 필요
@@ -317,6 +326,13 @@ loadFromFirebase()
 
 - [ ] **ISA 계좌명**: MyAssetDashBD에서 어떤 이름으로 표시? (예: `ISA (삼성증권)`)
 - [x] **RIA 계좌명**: `RIA (키움)` — OBil과 완전히 별개 계좌. "RIA / OBil" 혼용 표기 금지. RIA 개설 전(~2026-03-29)에는 잔액 0 / 빈값으로 표시
-- [ ] **PLAN_DATA 초기값**: 첫 실행 시 계획 데이터가 없으면 기본값 제공할 것인가? //기본 계획값 제공
-- [ ] **연금저축 납입 자동 계산**: `kiwoom.combined`에 이체내역이 없는 월은 0으로 처리?
+- [x] **PLAN_DATA 초기값**: 기본값 제공 (DEFAULT_PLAN 구현 완료)
+- [x] **연금저축 납입 자동 계산**: 이체내역 없는 월은 0으로 처리 (구현 완료)
 - [ ] **Firebase 쓰기 권한**: 현재 Firebase Rules가 `asset-data/pension-tracker/**` PATCH 허용하는가?
+- [ ] **[핵심 재검토] IRP1 납입 자동 계산 가능 여부**:
+  - 연금저축 납입은 삼성증권 거래내역 JSON → Gemini → MyAssetDashBD 경로로 이미 `kiwoom.combined`에 저장됨
+  - IRP1도 삼성증권 계좌이므로 동일 거래내역 JSON에 이체입금이 포함되어 있을 가능성 높음
+  - **확인 필요**: `kiwoom.combined[].invest[]` 배열에서 IRP1 해당 인덱스가 있는가?
+    - 있으면 → IRP 납입 입력 모달 불필요, 연금저축과 동일하게 델타 자동 계산으로 교체
+    - 없으면 → 현재 설계(수동 모달) 유지
+  - → **MyAssetDashBD에서 실제 invest[] 전체 인덱스 구조 확인 후 결정**
