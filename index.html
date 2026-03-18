@@ -4,6 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>연금전략 트래커</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
   <style>
     :root {
       --bg: #0f1117;
@@ -350,6 +351,87 @@
       color: var(--auto-badge-text);
     }
 
+    /* ─── Chart Section ─── */
+    .chart-section {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      margin-top: 24px;
+      overflow: hidden;
+    }
+    .chart-header {
+      background: var(--surface2);
+      padding: 14px 18px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+    .chart-header h2 { font-size: 15px; font-weight: 700; white-space: nowrap; }
+    .chart-tabs { display: flex; gap: 4px; flex-wrap: wrap; }
+    .chart-tab {
+      padding: 5px 14px;
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      background: transparent;
+      color: var(--text-muted);
+      font-size: 12px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .chart-tab:hover { color: var(--text); border-color: var(--accent); }
+    .chart-tab.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+
+    .chart-pane { display: none; padding: 16px 18px; }
+    .chart-pane.active { display: block; }
+
+    .chart-controls {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 14px;
+      flex-wrap: wrap;
+    }
+    .ctrl-label { font-size: 12px; color: var(--text-muted); white-space: nowrap; }
+    .filter-group { display: flex; gap: 4px; flex-wrap: wrap; }
+    .filter-btn {
+      padding: 3px 11px;
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      background: transparent;
+      color: var(--text-muted);
+      font-size: 12px;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .filter-btn:hover { color: var(--text); border-color: var(--accent); }
+    .filter-btn.active {
+      background: var(--accent-dim);
+      color: var(--auto-badge-text);
+      border-color: var(--accent);
+    }
+    .chart-controls select {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 4px 10px;
+      color: var(--text);
+      font-size: 12px;
+      cursor: pointer;
+      outline: none;
+    }
+    .chart-canvas-wrap { position: relative; height: 260px; }
+    .voo-canvas-wrap   { height: 200px; max-width: 280px; margin: 0 auto; }
+    .voo-stats { text-align: center; margin-top: 10px; }
+    .no-chart-data {
+      text-align: center;
+      color: var(--text-muted);
+      font-size: 13px;
+      padding: 40px 20px;
+    }
+
     /* ─── Responsive ─── */
     @media (max-width: 600px) {
       .form-grid { grid-template-columns: 1fr; }
@@ -576,6 +658,66 @@
     <button class="btn btn-success" onclick="saveActual()">💾 저장</button>
   </div>
 
+  <!-- 📈 분석 차트 -->
+  <div class="chart-section" id="chart-section">
+    <div class="chart-header">
+      <h2>📈 분석 차트</h2>
+      <div class="chart-tabs">
+        <button class="chart-tab active" data-tab="trend"        onclick="switchChartTab('trend')">연금자산 추이</button>
+        <button class="chart-tab"        data-tab="contribution" onclick="switchChartTab('contribution')">납입 달성률</button>
+        <button class="chart-tab"        data-tab="balance"      onclick="switchChartTab('balance')">원금 vs 평가</button>
+        <button class="chart-tab"        data-tab="voo"          onclick="switchChartTab('voo')">VOO 현황</button>
+      </div>
+    </div>
+
+    <!-- Tab 1: 연금자산 추이 -->
+    <div class="chart-pane active" id="pane-trend">
+      <div class="chart-controls">
+        <span class="ctrl-label">계좌</span>
+        <div class="filter-group">
+          <button class="filter-btn active" onclick="selectChartAcct(this,'all')">전체</button>
+          <button class="filter-btn" onclick="selectChartAcct(this,'pension')">연금저축</button>
+          <button class="filter-btn" onclick="selectChartAcct(this,'irp')">IRP</button>
+          <button class="filter-btn" onclick="selectChartAcct(this,'isa')">ISA</button>
+          <button class="filter-btn" onclick="selectChartAcct(this,'ria')">RIA</button>
+        </div>
+      </div>
+      <div class="chart-canvas-wrap"><canvas id="chart-trend"></canvas></div>
+      <p class="no-chart-data" id="no-trend" style="display:none">
+        월별 데이터를 2개월 이상 저장하면 추이 차트가 표시됩니다.
+      </p>
+    </div>
+
+    <!-- Tab 2: 납입 달성률 -->
+    <div class="chart-pane" id="pane-contribution">
+      <div class="chart-controls">
+        <span class="ctrl-label">연도</span>
+        <select id="ctrl-year" onchange="renderChart_contribution()"></select>
+      </div>
+      <div class="chart-canvas-wrap"><canvas id="chart-contribution"></canvas></div>
+      <p class="no-chart-data" id="no-contribution" style="display:none">납입 데이터가 없습니다.</p>
+    </div>
+
+    <!-- Tab 3: 원금 vs 평가금액 -->
+    <div class="chart-pane" id="pane-balance">
+      <div class="chart-controls">
+        <span class="ctrl-label">기준 월</span>
+        <select id="ctrl-month" onchange="renderChart_balance()"></select>
+      </div>
+      <div class="chart-canvas-wrap"><canvas id="chart-balance"></canvas></div>
+      <p class="no-chart-data" id="no-balance" style="display:none">저장된 데이터가 없습니다.</p>
+    </div>
+
+    <!-- Tab 4: VOO 양도차익 -->
+    <div class="chart-pane" id="pane-voo">
+      <div class="voo-canvas-wrap"><canvas id="chart-voo"></canvas></div>
+      <div class="voo-stats" id="voo-stats"></div>
+      <p class="no-chart-data" id="no-voo" style="display:none">
+        VOO 양도차익 데이터가 없습니다. 납입/세금 섹션에서 양도차익을 입력하세요.
+      </p>
+    </div>
+  </div>
+
   <!-- 이력 테이블 -->
   <div class="history-section">
     <h2>📋 월별 실적 이력</h2>
@@ -682,6 +824,9 @@ window.addEventListener('DOMContentLoaded', () => {
 
   // Render history
   renderHistory();
+
+  // Init charts
+  initCharts();
 
   // Header timestamp
   document.getElementById('header-ts').textContent = `오늘: ${new Date().toLocaleDateString('ko-KR')}`;
@@ -888,6 +1033,7 @@ function saveActual() {
 
   saveRecord(month, data);
   renderHistory();
+  _renderChart();
 
   const msg = document.getElementById('save-msg');
   msg.classList.add('show');
@@ -977,6 +1123,409 @@ function applyPasteJson() {
   // asset-dashboard-v3 구조 그대로 state로 사용
   applyDashboardData({ state: parsed });
   closePasteModal();
+}
+
+// ============================================================
+//  CHART MODULE
+// ============================================================
+
+const PLAN_CONST = {
+  pension_monthly:  1250000,   // 연금저축 월 125만
+  irp1_monthly:      250000,   // IRP1 월 25만
+  isa_monthly:       250000,   // ISA 월 25만 (VOO 매도)
+  pension_annual:  15000000,   // 연금저축 연 1,500만
+  irp1_annual:      3000000,   // IRP1 연 300만
+  voo_gain_limit:   2500000,   // VOO 양도차익 연간 기본공제 한도
+};
+
+const CC = {                   // chart colors
+  pension: '#4f8ef7',
+  irp1:    '#34d399',
+  irp2:    '#a78bfa',
+  isa:     '#fbbf24',
+  ria:     '#fb923c',
+  invest:  '#2a4a8a',
+  plan:    '#4a5568',
+};
+
+let _tab  = 'trend';
+let _acct = 'all';
+let _ci   = {};                // chart instances
+
+function _kill(k) {
+  if (_ci[k]) { _ci[k].destroy(); _ci[k] = null; }
+}
+
+// 만원/억원 단위 포맷 (차트 축용)
+function fmtW(v) {
+  if (v == null || isNaN(v)) return '0';
+  const n = Number(v), abs = Math.abs(n);
+  if (abs >= 100000000) return (n / 100000000).toFixed(1) + '억';
+  if (abs >= 10000)     return Math.round(n / 10000) + '만';
+  return n.toLocaleString('ko-KR');
+}
+
+// 공통 Chart.js 옵션 (다크 테마)
+function _baseOpts() {
+  return {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: { labels: { color: '#e2e8f0', font: { size: 12 }, boxWidth: 16 } },
+    },
+    scales: {
+      x: { ticks: { color: '#7a8499', font: { size: 11 } }, grid: { color: '#2e3247' } },
+      y: { ticks: { color: '#7a8499', font: { size: 11 }, callback: v => fmtW(v) }, grid: { color: '#2e3247' } },
+    },
+  };
+}
+
+// ─── 탭 전환 ──────────────────────────────────────────────────
+function switchChartTab(tab) {
+  _tab = tab;
+  document.querySelectorAll('.chart-tab').forEach(b =>
+    b.classList.toggle('active', b.dataset.tab === tab));
+  document.querySelectorAll('.chart-pane').forEach(p =>
+    p.classList.toggle('active', p.id === 'pane-' + tab));
+  _renderChart();
+}
+
+function selectChartAcct(btn, acct) {
+  _acct = acct;
+  btn.closest('.filter-group').querySelectorAll('.filter-btn')
+     .forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  _renderChart();
+}
+
+function _renderChart() {
+  const all = getAllRecords();
+  if      (_tab === 'trend')        renderChart_trend(all);
+  else if (_tab === 'contribution') renderChart_contribution(all);
+  else if (_tab === 'balance')      renderChart_balance(all);
+  else if (_tab === 'voo')          renderChart_voo(all);
+}
+
+// ─── Chart 1: 연금자산 추이 (Line) ───────────────────────────
+function renderChart_trend(all) {
+  _kill('trend');
+  const data   = all || getAllRecords();
+  const months = Object.keys(data).sort();
+  const canvas = document.getElementById('chart-trend');
+  const noEl   = document.getElementById('no-trend');
+
+  if (months.length < 2) {
+    canvas.style.display = 'none';
+    noEl.style.display = 'block';
+    return;
+  }
+  canvas.style.display = 'block';
+  noEl.style.display = 'none';
+
+  const g = (m, keys) => keys.reduce((s, k) => s + Number(data[m][k] || 0), 0);
+  const datasets = [];
+
+  if (_acct === 'all') {
+    // 계좌별 개별 라인
+    [
+      { label: '연금저축', keys: ['f_pension'],       color: CC.pension },
+      { label: 'IRP',     keys: ['f_irp1','f_irp2'], color: CC.irp1   },
+      { label: 'ISA',     keys: ['f_isa'],            color: CC.isa    },
+      { label: 'RIA',     keys: ['f_ria'],            color: CC.ria    },
+    ].forEach(({ label, keys, color }) => {
+      const d2 = months.map(m => g(m, keys));
+      if (d2.some(v => v > 0)) {
+        datasets.push({
+          label, data: d2,
+          borderColor: color, backgroundColor: color + '18',
+          fill: false, tension: 0.35, pointRadius: 3, borderWidth: 1.5,
+        });
+      }
+    });
+
+    // 합계 굵은 라인 (맨 앞에)
+    const totalData = months.map(m => g(m, ['f_pension','f_irp1','f_irp2','f_isa','f_ria']));
+    datasets.unshift({
+      label: '연금자산 합계',
+      data: totalData,
+      borderColor: '#ffffff', backgroundColor: 'transparent',
+      fill: false, tension: 0.35, pointRadius: 5, pointHoverRadius: 7, borderWidth: 2.5,
+    });
+
+    // 누적 계획 납입 점선 (추적 시작 월 기준 상대)
+    const [fy, fm] = months[0].split('-').map(Number);
+    const planData = months.map(m => {
+      const [y, mo] = m.split('-').map(Number);
+      const n = (y - fy) * 12 + (mo - fm) + 1;
+      return n * (PLAN_CONST.pension_monthly + PLAN_CONST.irp1_monthly);
+    });
+    datasets.push({
+      label: '누적 계획 납입 (월 150만 기준)',
+      data: planData,
+      borderColor: CC.plan, backgroundColor: 'transparent',
+      fill: false, tension: 0, pointRadius: 0, borderWidth: 1.5,
+      borderDash: [6, 3],
+    });
+
+  } else {
+    const map = {
+      pension: { keys: ['f_pension'],       color: CC.pension, label: '연금저축' },
+      irp:     { keys: ['f_irp1','f_irp2'], color: CC.irp1,   label: 'IRP' },
+      isa:     { keys: ['f_isa'],           color: CC.isa,    label: 'ISA' },
+      ria:     { keys: ['f_ria'],           color: CC.ria,    label: 'RIA' },
+    };
+    const { keys, color, label } = map[_acct];
+    datasets.push({
+      label, data: months.map(m => g(m, keys)),
+      borderColor: color, backgroundColor: color + '25',
+      fill: true, tension: 0.35, pointRadius: 4, pointHoverRadius: 6, borderWidth: 2,
+    });
+  }
+
+  const opts = _baseOpts();
+  opts.interaction = { mode: 'index', intersect: false };
+  opts.plugins.tooltip = {
+    callbacks: { label: ctx => ` ${ctx.dataset.label}: ${fmtW(ctx.raw)}원` }
+  };
+  _ci.trend = new Chart(canvas, { type: 'line', data: { labels: months, datasets }, options: opts });
+}
+
+// ─── Chart 2: 납입 달성률 (Horizontal Bar) ───────────────────
+function renderChart_contribution(all) {
+  _kill('contribution');
+  const data   = all || getAllRecords();
+  const months = Object.keys(data).sort();
+  const canvas = document.getElementById('chart-contribution');
+  const noEl   = document.getElementById('no-contribution');
+
+  // 연도 셀렉터 구성
+  const years = [...new Set(months.map(m => m.slice(0, 4)))].sort().reverse();
+  const sel   = document.getElementById('ctrl-year');
+  if (!years.length) {
+    canvas.style.display = 'none'; noEl.style.display = 'block'; return;
+  }
+  if (sel.options.length === 0) {
+    sel.innerHTML = years.map(y => `<option>${y}</option>`).join('');
+  }
+  const year = sel.value || years[0];
+  canvas.style.display = 'block'; noEl.style.display = 'none';
+
+  // YTD 실적 합산
+  let pensionActual = 0, irpActual = 0;
+  Object.entries(data).forEach(([m, d]) => {
+    if (m.startsWith(year)) {
+      pensionActual += Number(d.f_c_pension || 0);
+      irpActual     += Number(d.f_c_irp     || 0);
+    }
+  });
+
+  // 현시점 계획 (경과 개월수)
+  const now     = new Date();
+  const elapsed = parseInt(year) < now.getFullYear() ? 12
+                : parseInt(year) > now.getFullYear() ? 0
+                : now.getMonth() + 1;
+  const pensionPlan = PLAN_CONST.pension_monthly * elapsed;
+  const irpPlan     = PLAN_CONST.irp1_monthly    * elapsed;
+
+  const labels  = ['연금저축', 'IRP1'];
+  const annuals = [PLAN_CONST.pension_annual, PLAN_CONST.irp1_annual];
+  const planPro = [pensionPlan, irpPlan];
+  const actuals = [pensionActual, irpActual];
+  const pcts    = actuals.map((a, i) => annuals[i] > 0 ? Math.round(a / annuals[i] * 100) : 0);
+
+  const opts = {
+    indexAxis: 'y',
+    responsive: true, maintainAspectRatio: false,
+    plugins: {
+      legend: { labels: { color: '#e2e8f0', font: { size: 12 }, boxWidth: 16 } },
+      tooltip: {
+        callbacks: {
+          label: ctx => {
+            const v = Number(ctx.raw).toLocaleString('ko-KR');
+            if (ctx.datasetIndex === 0) return ` 연간 목표: ${v}원`;
+            if (ctx.datasetIndex === 1) return ` 현시점 계획 (${elapsed}개월): ${v}원`;
+            return ` 실적: ${v}원  (연간 목표 ${pcts[ctx.dataIndex]}%)`;
+          }
+        }
+      }
+    },
+    scales: {
+      x: { ticks: { color: '#7a8499', font: { size: 11 }, callback: v => fmtW(v) }, grid: { color: '#2e3247' } },
+      y: { ticks: { color: '#e2e8f0', font: { size: 13 } }, grid: { color: '#2e3247' } },
+    },
+  };
+
+  _ci.contribution = new Chart(canvas, {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: [
+        { label: '연간 목표',    data: annuals, backgroundColor: '#1a2236', borderColor: CC.plan, borderWidth: 1, borderRadius: 4 },
+        { label: '현시점 계획', data: planPro, backgroundColor: CC.invest, borderRadius: 4 },
+        { label: '실적',        data: actuals, backgroundColor: [CC.pension, CC.irp1], borderRadius: 4 },
+      ]
+    },
+    options: opts,
+  });
+}
+
+// ─── Chart 3: 원금 vs 평가금액 (Grouped Bar) ─────────────────
+function renderChart_balance(all) {
+  _kill('balance');
+  const data   = all || getAllRecords();
+  const months = Object.keys(data).sort();
+  const canvas = document.getElementById('chart-balance');
+  const noEl   = document.getElementById('no-balance');
+
+  if (!months.length) {
+    canvas.style.display = 'none'; noEl.style.display = 'block'; return;
+  }
+
+  // 월 셀렉터 구성
+  const sel = document.getElementById('ctrl-month');
+  if (sel.options.length === 0) {
+    sel.innerHTML = [...months].reverse().map(m => `<option>${m}</option>`).join('');
+  }
+  const selM = sel.value || months[months.length - 1];
+  const d    = data[selM];
+  if (!d) { canvas.style.display = 'none'; noEl.style.display = 'block'; return; }
+  canvas.style.display = 'block'; noEl.style.display = 'none';
+
+  // 누적 납입원금 (selM 이하 전체 합산)
+  let pInvest = 0, irpInvest = 0;
+  Object.entries(data).forEach(([m, rec]) => {
+    if (m <= selM) {
+      pInvest    += Number(rec.f_c_pension || 0);
+      irpInvest  += Number(rec.f_c_irp     || 0);
+    }
+  });
+
+  const accounts = [
+    { label: '연금저축', invest: pInvest,   bal: Number(d.f_pension || 0), color: CC.pension },
+    { label: 'IRP1',    invest: irpInvest, bal: Number(d.f_irp1    || 0), color: CC.irp1   },
+    { label: 'IRP2',    invest: 0,         bal: Number(d.f_irp2    || 0), color: CC.irp2   },
+    { label: 'ISA',     invest: 0,         bal: Number(d.f_isa     || 0), color: CC.isa    },
+    { label: 'RIA',     invest: 0,         bal: Number(d.f_ria     || 0), color: CC.ria    },
+  ].filter(a => a.bal > 0 || a.invest > 0);
+
+  const opts = _baseOpts();
+  opts.plugins.tooltip = {
+    callbacks: {
+      label: ctx => {
+        const a = accounts[ctx.dataIndex];
+        if (ctx.dataset.label === '평가금액' && a.invest > 0) {
+          const gain = a.bal - a.invest;
+          const pct  = (gain / a.invest * 100).toFixed(1);
+          const sign = gain >= 0 ? '+' : '';
+          return ` 평가금액: ${fmtW(a.bal)}원  (${sign}${fmtW(gain)}원, ${sign}${pct}%)`;
+        }
+        const tag = a.invest === 0 && ctx.dataset.label === '누적 납입원금' ? ' (미추적)' : '';
+        return ` ${ctx.dataset.label}: ${fmtW(ctx.raw)}원${tag}`;
+      }
+    }
+  };
+
+  _ci.balance = new Chart(canvas, {
+    type: 'bar',
+    data: {
+      labels: accounts.map(a => a.label),
+      datasets: [
+        {
+          label: '누적 납입원금',
+          data: accounts.map(a => a.invest),
+          backgroundColor: CC.invest,
+          borderRadius: 4,
+        },
+        {
+          label: '평가금액',
+          data: accounts.map(a => a.bal),
+          backgroundColor: accounts.map(a =>
+            a.invest === 0 ? a.color + 'aa'              // 원금 미추적 → 계좌색
+            : a.bal >= a.invest ? '#34d399' : '#f87171'  // 수익 or 손실
+          ),
+          borderRadius: 4,
+        },
+      ]
+    },
+    options: opts,
+  });
+}
+
+// ─── Chart 4: VOO 양도차익 (Doughnut) ────────────────────────
+function renderChart_voo(all) {
+  _kill('voo');
+  const data   = all || getAllRecords();
+  const canvas = document.getElementById('chart-voo');
+  const noEl   = document.getElementById('no-voo');
+  const stats  = document.getElementById('voo-stats');
+
+  // 가장 최근 양도차익 데이터 사용
+  let gainYtd = null;
+  Object.keys(data).sort().reverse().forEach(m => {
+    if (gainYtd === null && data[m].f_voo_gain_ytd != null && data[m].f_voo_gain_ytd !== '') {
+      gainYtd = Number(data[m].f_voo_gain_ytd);
+    }
+  });
+
+  if (gainYtd === null) {
+    canvas.style.display = 'none';
+    noEl.style.display = 'block';
+    stats.innerHTML = '';
+    return;
+  }
+  canvas.style.display = 'block';
+  noEl.style.display = 'none';
+
+  const limit     = PLAN_CONST.voo_gain_limit;
+  const used      = Math.min(gainYtd, limit);
+  const remaining = Math.max(0, limit - gainYtd);
+  const over      = Math.max(0, gainYtd - limit);
+  const pct       = Math.min(100, Math.round(gainYtd / limit * 100));
+
+  stats.innerHTML = `
+    <div style="display:flex;justify-content:center;gap:20px;flex-wrap:wrap;font-size:13px;margin-top:8px">
+      <span>실현 차익: <strong style="color:#4f8ef7">${gainYtd.toLocaleString('ko-KR')}원</strong></span>
+      <span>연간 한도: <strong style="color:#7a8499">250만원</strong></span>
+      <span>잔여: <strong style="color:${remaining > 0 ? '#34d399' : '#f87171'}">${remaining.toLocaleString('ko-KR')}원</strong></span>
+    </div>
+    <div style="font-size:12px;margin-top:6px;color:${over > 0 ? '#f87171' : '#34d399'}">
+      ${over > 0
+        ? `⚠️ 한도 초과 ${over.toLocaleString('ko-KR')}원 → 22% 과세 대상`
+        : `✅ 한도 내 (${pct}% 사용)  |  VOO 추가 매도 가능: ${remaining.toLocaleString('ko-KR')}원 이하`}
+    </div>
+  `;
+
+  _ci.voo = new Chart(canvas, {
+    type: 'doughnut',
+    data: {
+      labels: over > 0
+        ? ['기본공제 한도(250만)', '과세 초과분']
+        : ['실현 양도차익', '잔여 한도'],
+      datasets: [{
+        data: over > 0 ? [limit, over] : [used, remaining],
+        backgroundColor: over > 0
+          ? ['#f87171', '#450a0a']
+          : ['#4f8ef7', '#1a2236'],
+        borderWidth: 0,
+        hoverOffset: 8,
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      cutout: '62%',
+      plugins: {
+        legend: { labels: { color: '#e2e8f0', font: { size: 12 }, boxWidth: 14 } },
+        tooltip: {
+          callbacks: { label: ctx => ` ${ctx.label}: ${Number(ctx.raw).toLocaleString('ko-KR')}원` }
+        }
+      }
+    }
+  });
+}
+
+// ─── initCharts ───────────────────────────────────────────────
+function initCharts() {
+  renderChart_trend(getAllRecords());
 }
 
 // ============================================================
