@@ -139,14 +139,23 @@ const Renderer = (() => {
 
   // ── 연금저축 납입 자동 계산 (kiwoom.combined invest[3] 델타) ─
   function _calcPensionContrib(kiwoom, month) {
+    return _calcInvestDelta(kiwoom, month, 3);
+  }
+
+  // ── IRP1 납입 자동 계산 (kiwoom.combined invest[7] 델타) ────
+  function _calcIrp1Contrib(kiwoom, month) {
+    return _calcInvestDelta(kiwoom, month, 7);
+  }
+
+  function _calcInvestDelta(kiwoom, month, investIdx) {
     if (!kiwoom?.combined?.length) return 0;
     const sorted = [...kiwoom.combined]
       .filter(e => e.month)
       .sort((a, b) => a.month.localeCompare(b.month));
     const idx = sorted.findIndex(e => e.month === month);
-    if (idx < 0) return 0; // 해당 월 항목 없음 → 0
-    const curr = Number(sorted[idx]?.invest?.[3] ?? 0);
-    const prev = idx > 0 ? Number(sorted[idx - 1]?.invest?.[3] ?? 0) : 0;
+    if (idx < 0) return 0;
+    const curr = Number(sorted[idx]?.invest?.[investIdx] ?? 0);
+    const prev = idx > 0 ? Number(sorted[idx - 1]?.invest?.[investIdx] ?? 0) : 0;
     return Math.max(0, curr - prev);
   }
 
@@ -170,8 +179,11 @@ const Renderer = (() => {
 
   // ── 납입 표시 갱신 (월 변경 시 호출) ─────────────────────
   function refreshContribDisplay(month) {
-    const irpVal = AppState.contributions.irp[month] ?? 0;
-    const isaVal = AppState.contributions.isa[month] ?? 0;
+    // IRP1: invest[7] 델타 자동 계산 우선, 없으면 수동 입력 fallback
+    const irpAuto = _calcIrp1Contrib(AppState.raw?.kiwoom, month);
+    const irpVal  = irpAuto > 0 ? irpAuto : (AppState.contributions.irp[month] ?? 0);
+    const isaVal  = AppState.contributions.isa[month] ?? 0;
+
     const irpEl = document.getElementById('disp-c-irp');
     const isaEl = document.getElementById('disp-c-isa');
     if (irpEl) irpEl.textContent = fmt(irpVal);
@@ -265,7 +277,7 @@ const Renderer = (() => {
       overseas:   v('f_overseas'),
       ria:        v('f_ria'),
       c_pension:  v('calc-c-pension'),
-      c_irp:      AppState.contributions.irp[month] || 0,
+      c_irp:      (() => { const a = _calcIrp1Contrib(AppState.raw?.kiwoom, month); return a > 0 ? a : (AppState.contributions.irp[month] || 0); })(),
       c_isa:      AppState.contributions.isa[month] || 0,
       tax_refund: v('f_tax'),
       voo_sold:   voo.sold,
