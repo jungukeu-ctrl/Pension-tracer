@@ -332,11 +332,11 @@ loadFromFirebase()
 
 ## 7. 결정 필요 사항 (구현 전 확인)
 
-- [ ] **ISA 계좌명**: MyAssetDashBD에서 어떤 이름으로 표시? (예: `ISA (삼성증권)`)
+- [x] **ISA 계좌명**: `ISA(삼성증권)` — MyAssetDashBD PLAN.md 계좌 구성 표 기준으로 확정
 - [x] **RIA 계좌명**: `RIA (키움)` — OBil과 완전히 별개 계좌. "RIA / OBil" 혼용 표기 금지. RIA 개설 전(~2026-03-29)에는 잔액 0 / 빈값으로 표시
 - [x] **PLAN_DATA 초기값**: 기본값 제공 (DEFAULT_PLAN 구현 완료)
 - [x] **연금저축 납입 자동 계산**: 이체내역 없는 월은 0으로 처리 (구현 완료)
-- [ ] **Firebase 쓰기 권한**: 현재 Firebase Rules가 `asset-data/pension-tracker/**` PATCH 허용하는가?
+- [x] **Firebase 쓰기 권한**: MyAssetDashBD가 `asset-data/` 전체에 `.write: true` → 하위 경로 PATCH 자동 허용 확인 완료
 - [x] **[확인 완료] IRP1 납입 자동 계산 가능 여부**:
   - invest[7] = IRP1, invest[8] = IRP2 (MyAssetDashBD/js/export.js AI_NAMES 배열 확인)
   - 연금저축(invest[3])만 Samsung Securities JSON으로 자동 계산, IRP는 state['irp1'].val 수동 입력
