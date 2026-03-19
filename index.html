@@ -5,438 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>연금전략 트래커</title>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-  <style>
-    :root {
-      --bg: #0f1117;
-      --surface: #1a1d27;
-      --surface2: #252836;
-      --border: #2e3247;
-      --accent: #4f8ef7;
-      --accent-dim: #2a4a8a;
-      --green: #34d399;
-      --yellow: #fbbf24;
-      --red: #f87171;
-      --text: #e2e8f0;
-      --text-muted: #7a8499;
-      --auto-badge: #1d3a6e;
-      --auto-badge-text: #93c5fd;
-      --manual-border: #d97706;
-      --manual-bg: #1c1507;
-    }
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-    body {
-      background: var(--bg);
-      color: var(--text);
-      font-family: 'Segoe UI', system-ui, sans-serif;
-      font-size: 14px;
-      line-height: 1.6;
-    }
-    header {
-      background: var(--surface);
-      border-bottom: 1px solid var(--border);
-      padding: 16px 24px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-    }
-    header h1 { font-size: 18px; font-weight: 700; color: var(--accent); }
-    header span { font-size: 12px; color: var(--text-muted); }
-
-    .container { max-width: 860px; margin: 0 auto; padding: 24px 16px; }
-
-    /* ─── Settings Banner ─── */
-    .settings-banner {
-      background: var(--surface2);
-      border: 1px solid var(--border);
-      border-left: 4px solid var(--yellow);
-      border-radius: 8px;
-      padding: 16px 20px;
-      margin-bottom: 20px;
-    }
-    .settings-banner h3 { color: var(--yellow); font-size: 14px; margin-bottom: 10px; }
-    .settings-banner p { color: var(--text-muted); font-size: 13px; margin-bottom: 12px; }
-    .url-input-row { display: flex; gap: 8px; align-items: center; }
-    .url-input-row input {
-      flex: 1;
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 6px;
-      padding: 8px 12px;
-      color: var(--text);
-      font-size: 13px;
-      font-family: monospace;
-    }
-    .url-input-row input:focus { outline: none; border-color: var(--accent); }
-
-    /* ─── Buttons ─── */
-    .btn {
-      padding: 9px 18px;
-      border: none;
-      border-radius: 6px;
-      cursor: pointer;
-      font-size: 13px;
-      font-weight: 600;
-      transition: opacity 0.15s, transform 0.1s;
-      white-space: nowrap;
-    }
-    .btn:active { transform: scale(0.97); }
-    .btn:disabled { opacity: 0.45; cursor: not-allowed; }
-    .btn-primary { background: var(--accent); color: #fff; }
-    .btn-primary:hover:not(:disabled) { opacity: 0.88; }
-    .btn-success { background: var(--green); color: #000; }
-    .btn-success:hover:not(:disabled) { opacity: 0.88; }
-    .btn-secondary {
-      background: var(--surface2);
-      color: var(--text);
-      border: 1px solid var(--border);
-    }
-    .btn-secondary:hover:not(:disabled) { border-color: var(--accent); color: var(--accent); }
-    .btn-sm { padding: 6px 12px; font-size: 12px; }
-
-    /* ─── Month selector ─── */
-    .month-row {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      margin-bottom: 20px;
-      flex-wrap: wrap;
-    }
-    .month-row label { color: var(--text-muted); font-size: 13px; }
-    .month-row input[type="month"] {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 6px;
-      padding: 8px 12px;
-      color: var(--text);
-      font-size: 14px;
-    }
-    .month-row input[type="month"]:focus { outline: none; border-color: var(--accent); }
-
-    /* ─── Sync button row ─── */
-    .sync-row {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      background: var(--surface2);
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      padding: 14px 18px;
-      margin-bottom: 20px;
-      flex-wrap: wrap;
-    }
-    .sync-row .sync-info { flex: 1; min-width: 200px; }
-    .sync-row .sync-info p { color: var(--text-muted); font-size: 12px; margin-top: 2px; }
-    #sync-status {
-      font-size: 12px;
-      padding: 4px 10px;
-      border-radius: 20px;
-      font-weight: 600;
-    }
-    .status-idle { background: var(--surface); color: var(--text-muted); }
-    .status-loading { background: #1e3a6e; color: #93c5fd; }
-    .status-success { background: #064e3b; color: var(--green); }
-    .status-error { background: #450a0a; color: var(--red); }
-
-    /* ─── Date mismatch warning ─── */
-    #date-warning {
-      display: none;
-      background: #2a1a00;
-      border: 1px solid var(--yellow);
-      border-radius: 6px;
-      padding: 10px 14px;
-      color: var(--yellow);
-      font-size: 13px;
-      margin-bottom: 16px;
-    }
-
-    /* ─── Form sections ─── */
-    .form-section {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 10px;
-      margin-bottom: 16px;
-      overflow: hidden;
-    }
-    .form-section-header {
-      background: var(--surface2);
-      padding: 12px 18px;
-      border-bottom: 1px solid var(--border);
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-    .form-section-header h3 { font-size: 14px; font-weight: 700; }
-    .section-tag {
-      font-size: 11px;
-      padding: 2px 8px;
-      border-radius: 20px;
-      font-weight: 600;
-    }
-    .tag-auto { background: var(--auto-badge); color: var(--auto-badge-text); }
-    .tag-manual { background: #3b1f00; color: var(--yellow); }
-    .tag-mixed { background: #1a2a1a; color: var(--green); }
-
-    .form-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 0;
-    }
-    .form-row {
-      padding: 14px 18px;
-      border-bottom: 1px solid var(--border);
-      display: flex;
-      flex-direction: column;
-      gap: 6px;
-    }
-    .form-row:last-child { border-bottom: none; }
-    .form-row.full-width { grid-column: 1 / -1; }
-
-    .field-label {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 8px;
-    }
-    .field-label span { font-size: 13px; color: var(--text-muted); }
-    .date-badge {
-      font-size: 11px;
-      padding: 2px 7px;
-      border-radius: 20px;
-      background: var(--auto-badge);
-      color: var(--auto-badge-text);
-      white-space: nowrap;
-    }
-    .manual-label {
-      font-size: 11px;
-      color: var(--yellow);
-      display: none;
-    }
-
-    .field-input-wrap { position: relative; }
-    .field-input-wrap input {
-      width: 100%;
-      background: var(--surface2);
-      border: 1px solid var(--border);
-      border-radius: 6px;
-      padding: 9px 46px 9px 12px;
-      color: var(--text);
-      font-size: 14px;
-      font-weight: 600;
-      transition: border-color 0.2s;
-    }
-    .field-input-wrap input:focus { outline: none; border-color: var(--accent); }
-    .field-input-wrap input.auto-filled {
-      border-color: var(--accent-dim);
-      background: #0d1b3e;
-      color: #93c5fd;
-    }
-    .field-input-wrap input.manual-needed {
-      border-color: var(--manual-border) !important;
-      background: var(--manual-bg) !important;
-    }
-    .field-input-wrap .unit {
-      position: absolute;
-      right: 10px;
-      top: 50%;
-      transform: translateY(-50%);
-      color: var(--text-muted);
-      font-size: 12px;
-      pointer-events: none;
-    }
-
-    .field-hint {
-      font-size: 11px;
-      color: var(--text-muted);
-      margin-top: 2px;
-    }
-    .field-hint.warn { color: var(--yellow); }
-
-    /* ─── Save row ─── */
-    .save-row {
-      display: flex;
-      align-items: center;
-      justify-content: flex-end;
-      gap: 12px;
-      margin-top: 20px;
-      padding: 16px 0;
-    }
-    #save-msg {
-      font-size: 13px;
-      color: var(--green);
-      opacity: 0;
-      transition: opacity 0.3s;
-    }
-    #save-msg.show { opacity: 1; }
-
-    /* ─── History table ─── */
-    .history-section {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 10px;
-      margin-top: 32px;
-      overflow: hidden;
-    }
-    .history-section h2 {
-      font-size: 15px;
-      font-weight: 700;
-      padding: 14px 18px;
-      border-bottom: 1px solid var(--border);
-      background: var(--surface2);
-    }
-    .table-wrap { overflow-x: auto; }
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      font-size: 13px;
-    }
-    th {
-      background: var(--surface2);
-      color: var(--text-muted);
-      font-weight: 600;
-      padding: 10px 12px;
-      text-align: right;
-      border-bottom: 1px solid var(--border);
-      white-space: nowrap;
-    }
-    th:first-child { text-align: left; }
-    td {
-      padding: 10px 12px;
-      text-align: right;
-      border-bottom: 1px solid var(--border);
-      white-space: nowrap;
-    }
-    td:first-child { text-align: left; font-weight: 600; }
-    tr:last-child td { border-bottom: none; }
-    tr:hover td { background: var(--surface2); }
-    .no-data {
-      text-align: center;
-      color: var(--text-muted);
-      padding: 32px;
-      font-size: 13px;
-    }
-
-    /* ─── Settings section (bottom) ─── */
-    .settings-section {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 10px;
-      margin-top: 24px;
-      overflow: hidden;
-    }
-    .settings-section h2 {
-      font-size: 15px;
-      font-weight: 700;
-      padding: 14px 18px;
-      border-bottom: 1px solid var(--border);
-      background: var(--surface2);
-    }
-    .settings-body { padding: 18px; }
-    .settings-field { margin-bottom: 16px; }
-    .settings-field label {
-      display: block;
-      font-size: 13px;
-      color: var(--text-muted);
-      margin-bottom: 6px;
-    }
-    .settings-field .helper {
-      font-size: 12px;
-      color: var(--text-muted);
-      margin-top: 4px;
-    }
-    .settings-field .helper code {
-      background: var(--surface2);
-      padding: 1px 5px;
-      border-radius: 3px;
-      font-family: monospace;
-      color: var(--auto-badge-text);
-    }
-
-    /* ─── Chart Section ─── */
-    .chart-section {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 10px;
-      margin-top: 24px;
-      overflow: hidden;
-    }
-    .chart-header {
-      background: var(--surface2);
-      padding: 14px 18px;
-      border-bottom: 1px solid var(--border);
-      display: flex;
-      align-items: center;
-      gap: 16px;
-      flex-wrap: wrap;
-    }
-    .chart-header h2 { font-size: 15px; font-weight: 700; white-space: nowrap; }
-    .chart-tabs { display: flex; gap: 4px; flex-wrap: wrap; }
-    .chart-tab {
-      padding: 5px 14px;
-      border: 1px solid var(--border);
-      border-radius: 20px;
-      background: transparent;
-      color: var(--text-muted);
-      font-size: 12px;
-      font-weight: 500;
-      cursor: pointer;
-      transition: all 0.15s;
-    }
-    .chart-tab:hover { color: var(--text); border-color: var(--accent); }
-    .chart-tab.active { background: var(--accent); color: #fff; border-color: var(--accent); }
-
-    .chart-pane { display: none; padding: 16px 18px; }
-    .chart-pane.active { display: block; }
-
-    .chart-controls {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      margin-bottom: 14px;
-      flex-wrap: wrap;
-    }
-    .ctrl-label { font-size: 12px; color: var(--text-muted); white-space: nowrap; }
-    .filter-group { display: flex; gap: 4px; flex-wrap: wrap; }
-    .filter-btn {
-      padding: 3px 11px;
-      border: 1px solid var(--border);
-      border-radius: 20px;
-      background: transparent;
-      color: var(--text-muted);
-      font-size: 12px;
-      cursor: pointer;
-      transition: all 0.15s;
-    }
-    .filter-btn:hover { color: var(--text); border-color: var(--accent); }
-    .filter-btn.active {
-      background: var(--accent-dim);
-      color: var(--auto-badge-text);
-      border-color: var(--accent);
-    }
-    .chart-controls select {
-      background: var(--surface2);
-      border: 1px solid var(--border);
-      border-radius: 6px;
-      padding: 4px 10px;
-      color: var(--text);
-      font-size: 12px;
-      cursor: pointer;
-      outline: none;
-    }
-    .chart-canvas-wrap { position: relative; height: 260px; }
-    .voo-canvas-wrap   { height: 200px; max-width: 280px; margin: 0 auto; }
-    .voo-stats { text-align: center; margin-top: 10px; }
-    .no-chart-data {
-      text-align: center;
-      color: var(--text-muted);
-      font-size: 13px;
-      padding: 40px 20px;
-    }
-
-    /* ─── Responsive ─── */
-    @media (max-width: 600px) {
-      .form-grid { grid-template-columns: 1fr; }
-    }
-  </style>
+  <link rel="stylesheet" href="css/style.css" />
 </head>
 <body>
 
@@ -447,65 +16,34 @@
 
 <div class="container">
 
-  <!-- GAS URL 미설정 시 배너 -->
+  <!-- Firebase URL 배너 (기본값 사용 중이므로 기본 숨김) -->
   <div class="settings-banner" id="gas-url-banner" style="display:none">
-    <h3>⚙️ MyAssetDashBD 연동 설정</h3>
-    <p>다른 Firebase 프로젝트를 사용하는 경우 아래에 Firebase Realtime Database URL을 입력하세요.<br>
-       기본 URL이 이미 설정되어 있으며, 변경이 필요한 경우에만 입력하세요.</p>
+    <h3>⚙️ Firebase URL 설정</h3>
+    <p>MyAssetDashBD Firebase Realtime Database URL을 입력하세요.</p>
     <div class="url-input-row">
       <input type="url" id="banner-gas-url" placeholder="https://your-project-default-rtdb.firebasedatabase.app" />
-      <button class="btn btn-primary" onclick="saveBannerGasUrl()">저장</button>
+      <button class="btn btn-primary" onclick="saveBannerUrl()">저장</button>
     </div>
   </div>
 
-  <!-- 월 선택 -->
-  <div class="month-row">
-    <label for="input-month">📅 입력 월</label>
-    <input type="month" id="input-month" />
-    <button class="btn btn-secondary btn-sm" onclick="loadMonthData()">불러오기</button>
-    <button class="btn btn-secondary btn-sm" onclick="clearForm()">초기화</button>
-  </div>
-
-  <!-- MyAssetDashBD 동기화 버튼 -->
-  <div class="sync-row">
-    <div class="sync-info">
-      <strong>📥 MyAssetDashBD 자동 연동</strong>
-      <p>Firebase Realtime Database에서 연금·투자 잔액을 자동으로 불러옵니다 (5개 항목)</p>
+  <!-- 컨트롤 바: Firebase 불러오기 + 월 선택 -->
+  <div class="control-bar">
+    <div class="sync-section">
+      <button class="btn btn-primary" id="btn-sync" onclick="loadFromFirebase()">📥 Firebase 불러오기</button>
+      <button class="btn btn-secondary btn-sm" onclick="ModalManager.openPaste()" title="Firebase 접근 불가 시 사용">📋 JSON 붙여넣기</button>
+      <span id="sync-status" class="status-idle">대기중</span>
     </div>
-    <span id="sync-status" class="status-idle">대기중</span>
-    <button class="btn btn-secondary btn-sm" onclick="openPasteModal()" title="Firebase 접근이 안 될 때 사용">📋 JSON 붙여넣기</button>
-    <button class="btn btn-primary" id="btn-sync" onclick="loadFromMyAssetDashBD()">
-      📥 Firebase에서 불러오기
-    </button>
-  </div>
-
-  <!-- JSON 붙여넣기 모달 -->
-  <div id="paste-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:300;align-items:center;justify-content:center">
-    <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:24px;width:min(560px,95vw);max-height:90vh;overflow-y:auto">
-      <div style="font-size:15px;font-weight:700;margin-bottom:8px">📋 asset-dashboard-v3 JSON 붙여넣기</div>
-      <div style="font-size:12px;color:var(--text-muted);margin-bottom:14px;line-height:1.7">
-        MyAssetDashBD가 열려 있는 브라우저 탭에서:<br>
-        <strong>F12 → Console</strong> 탭에 아래를 입력하고 복사 후 붙여넣기:
-        <div style="background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:10px 12px;margin-top:8px;font-family:monospace;font-size:12px;color:#93c5fd;user-select:all">copy(localStorage.getItem('asset-dashboard-v3'))</div>
-      </div>
-      <textarea id="paste-area"
-        placeholder='{"pension-saving":{"val":32396693,"date":"2026-03-14"},"pension-irp1":...}'
-        style="width:100%;height:120px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:10px 12px;font-size:12px;font-family:monospace;outline:none;resize:vertical;box-sizing:border-box"
-      ></textarea>
-      <div id="paste-error" style="font-size:12px;color:var(--red);margin-top:6px;display:none"></div>
-      <div style="display:flex;gap:8px;margin-top:14px;justify-content:flex-end">
-        <button class="btn btn-secondary" onclick="closePasteModal()">취소</button>
-        <button class="btn btn-primary" onclick="applyPasteJson()">✅ 적용</button>
-      </div>
+    <div class="month-section">
+      <label for="input-month">📅 기준 월</label>
+      <input type="month" id="input-month" onchange="onMonthChange()" />
+      <button class="btn btn-secondary btn-sm" onclick="loadMonthRecord()">기존 불러오기</button>
     </div>
   </div>
 
   <!-- 날짜 불일치 경고 -->
-  <div id="date-warning"></div>
+  <div id="date-warning" style="display:none"></div>
 
-  <!-- ─── 폼 ─── -->
-
-  <!-- 연금 계좌 잔액 (자동) -->
+  <!-- ─── 연금 계좌 잔액 (자동 연동) ─── -->
   <div class="form-section">
     <div class="form-section-header">
       <h3>연금 계좌 잔액</h3>
@@ -515,50 +53,51 @@
       <div class="form-row">
         <div class="field-label">
           <span>연금저축 (삼성증권)</span>
-          <span class="date-badge" id="badge-pension" style="display:none"></span>
+          <span class="date-badge" id="badge-f_pension" style="display:none"></span>
         </div>
         <div class="field-input-wrap">
           <input type="number" id="f_pension" placeholder="0" />
           <span class="unit">원</span>
         </div>
-        <span class="manual-label" id="ml-pension">⚠️ 직접 확인 후 입력 필요</span>
+        <span class="field-hint" id="hint-f_pension" style="display:none"></span>
       </div>
       <div class="form-row">
         <div class="field-label">
           <span>IRP1 (삼성증권)</span>
-          <span class="date-badge" id="badge-irp1" style="display:none"></span>
+          <span class="date-badge" id="badge-f_irp1" style="display:none"></span>
         </div>
         <div class="field-input-wrap">
           <input type="number" id="f_irp1" placeholder="0" />
           <span class="unit">원</span>
         </div>
-        <span class="manual-label" id="ml-irp1">⚠️ 직접 확인 후 입력 필요</span>
+        <span class="field-hint" id="hint-f_irp1" style="display:none"></span>
       </div>
       <div class="form-row">
         <div class="field-label">
           <span>IRP2 (하나증권)</span>
-          <span class="date-badge" id="badge-irp2" style="display:none"></span>
+          <span class="date-badge" id="badge-f_irp2" style="display:none"></span>
         </div>
         <div class="field-input-wrap">
           <input type="number" id="f_irp2" placeholder="0" />
           <span class="unit">원</span>
         </div>
-        <span class="manual-label" id="ml-irp2">⚠️ 직접 확인 후 입력 필요</span>
+        <span class="field-hint" id="hint-f_irp2" style="display:none"></span>
       </div>
       <div class="form-row">
         <div class="field-label">
-          <span>ISA 잔액</span>
+          <span>ISA (삼성증권)</span>
+          <span class="date-badge" id="badge-f_isa" style="display:none"></span>
         </div>
         <div class="field-input-wrap">
-          <input type="number" id="f_isa" placeholder="0" class="manual-needed" />
+          <input type="number" id="f_isa" placeholder="0" />
           <span class="unit">원</span>
         </div>
-        <span class="manual-label" style="display:block">⚠️ 직접 확인 후 입력 필요</span>
+        <span class="field-hint" id="hint-f_isa" style="display:none"></span>
       </div>
     </div>
   </div>
 
-  <!-- 투자 계좌 잔액 (자동) -->
+  <!-- ─── 투자 계좌 잔액 (자동 연동) ─── -->
   <div class="form-section">
     <div class="form-section-header">
       <h3>투자 계좌 잔액</h3>
@@ -568,105 +107,141 @@
       <div class="form-row">
         <div class="field-label">
           <span>해외주식 키움 (일반)</span>
-          <span class="date-badge" id="badge-overseas" style="display:none"></span>
+          <span class="date-badge" id="badge-f_overseas" style="display:none"></span>
         </div>
         <div class="field-input-wrap">
           <input type="number" id="f_overseas" placeholder="0" />
           <span class="unit">원</span>
         </div>
-        <span class="manual-label" id="ml-overseas">⚠️ 직접 확인 후 입력 필요</span>
+        <span class="field-hint" id="hint-f_overseas" style="display:none"></span>
       </div>
       <div class="form-row">
         <div class="field-label">
-          <span>RIA / OBil (키움)</span>
-          <span class="date-badge" id="badge-ria" style="display:none"></span>
+          <span>RIA (키움)</span>
+          <span class="date-badge" id="badge-f_ria" style="display:none"></span>
         </div>
         <div class="field-input-wrap">
           <input type="number" id="f_ria" placeholder="0" />
           <span class="unit">원</span>
         </div>
-        <span class="manual-label" id="ml-ria">⚠️ 직접 확인 후 입력 필요</span>
+        <span class="field-hint" id="hint-f_ria" style="display:none"></span>
       </div>
     </div>
   </div>
 
-  <!-- 납입 및 세금 (수동) -->
+  <!-- ─── 납입 / 세금 ─── -->
   <div class="form-section">
     <div class="form-section-header">
       <h3>납입 / 세금</h3>
-      <span class="section-tag tag-manual">수동 입력</span>
+      <span class="section-tag tag-mixed">자동+수동</span>
     </div>
     <div class="form-grid">
+
+      <!-- 연금저축 납입 (kiwoom.combined 델타 자동 계산) -->
       <div class="form-row">
         <div class="field-label">
           <span>연금저축 납입액 (월)</span>
+          <span class="section-tag tag-auto" style="font-size:10px">자동</span>
         </div>
-        <div class="field-input-wrap">
-          <input type="number" id="f_c_pension" placeholder="0" class="manual-needed" />
-          <span class="unit">원</span>
+        <div class="display-row">
+          <span class="disp-val auto" id="disp-c-pension">-</span>
+          <span style="font-size:12px;color:var(--text-muted)">원</span>
         </div>
-        <span class="manual-label" style="display:block">⚠️ 직접 확인 후 입력 필요</span>
+        <span class="field-hint">kiwoom.combined invest[3] 월간 델타로 자동 산출</span>
+        <input type="hidden" id="calc-c-pension" value="0" />
       </div>
+
+      <!-- IRP 납입 (contributions/irp 자동, 모달로 수정) -->
       <div class="form-row">
         <div class="field-label">
-          <span>IRP 납입액 (월)</span>
+          <span>IRP1 납입액 (월)</span>
+          <span class="section-tag tag-auto" style="font-size:10px">Firebase</span>
         </div>
-        <div class="field-input-wrap">
-          <input type="number" id="f_c_irp" placeholder="0" class="manual-needed" />
-          <span class="unit">원</span>
+        <div class="display-row">
+          <span class="disp-val" id="disp-c-irp">-</span>
+          <span style="font-size:12px;color:var(--text-muted)">원</span>
         </div>
-        <span class="manual-label" style="display:block">⚠️ 직접 확인 후 입력 필요</span>
+        <input type="hidden" id="calc-c-irp" value="0" />
       </div>
+
+      <!-- ISA 납입 (contributions/isa 자동, 모달로 수정) -->
       <div class="form-row">
         <div class="field-label">
-          <span>VOO 매도금액 (연간)</span>
+          <span>ISA 납입액 (월)</span>
+          <span class="section-tag tag-auto" style="font-size:10px">Firebase</span>
         </div>
-        <div class="field-input-wrap">
-          <input type="number" id="f_voo_sold" placeholder="0" class="manual-needed" />
-          <span class="unit">원</span>
+        <div class="display-row">
+          <span class="disp-val" id="disp-c-isa">-</span>
+          <span style="font-size:12px;color:var(--text-muted)">원</span>
         </div>
-        <span class="manual-label" style="display:block">⚠️ 직접 확인 후 입력 필요</span>
+        <input type="hidden" id="calc-c-isa" value="0" />
       </div>
+
+      <!-- 세액공제 환급 (수동) -->
       <div class="form-row">
         <div class="field-label">
-          <span>양도차익 누적 (YTD)</span>
-        </div>
-        <div class="field-input-wrap">
-          <input type="number" id="f_voo_gain_ytd" placeholder="0" class="manual-needed" />
-          <span class="unit">원</span>
-        </div>
-        <p class="field-hint warn">💡 키움 HTS → [해외주식/세금] → 양도소득세 조회</p>
-        <span class="manual-label" style="display:block">⚠️ 직접 확인 후 입력 필요</span>
-      </div>
-      <div class="form-row full-width">
-        <div class="field-label">
-          <span>세액공제 환급액 (연말정산 후)</span>
+          <span>세액공제 환급액 (연말정산)</span>
+          <span class="section-tag tag-manual" style="font-size:10px">수동</span>
         </div>
         <div class="field-input-wrap">
           <input type="number" id="f_tax" placeholder="0" class="manual-needed" />
           <span class="unit">원</span>
         </div>
-        <span class="manual-label" style="display:block">⚠️ 직접 확인 후 입력 필요</span>
+        <span class="field-hint warn">연말정산 후 환급액 직접 입력</span>
       </div>
+
+      <!-- VOO 매도 / 양도차익 (voo/{year} 자동, 모달로 수정) -->
+      <div class="form-row full-width">
+        <div class="field-label">
+          <span>VOO 매도 현황 (연간)</span>
+          <span class="section-tag tag-auto" style="font-size:10px">Firebase</span>
+        </div>
+        <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:center">
+          <div>
+            <div style="font-size:11px;color:var(--text-muted);margin-bottom:2px">매도금액</div>
+            <span class="disp-val" id="disp-voo-sold">-</span>
+          </div>
+          <div>
+            <div style="font-size:11px;color:var(--text-muted);margin-bottom:2px">양도차익 YTD</div>
+            <span class="disp-val" id="disp-voo-gain">-</span>
+          </div>
+          <div>
+            <div style="font-size:11px;color:var(--text-muted);margin-bottom:2px">잔여 한도</div>
+            <span id="disp-voo-remaining" style="font-size:13px;font-weight:600">-</span>
+          </div>
+        </div>
+        <input type="hidden" id="calc-voo-sold" value="0" />
+        <input type="hidden" id="calc-voo-gain" value="0" />
+        <span class="field-hint warn">💡 키움 HTS → [해외주식/세금] → 양도소득세 조회 후 VOO 매도 입력 버튼으로 업데이트</span>
+      </div>
+
+    </div>
+
+    <!-- 모달 트리거 버튼들 -->
+    <div class="modal-btn-row">
+      <button class="btn btn-secondary btn-sm" onclick="ModalManager.openIrp()">💰 IRP 납입 입력</button>
+      <button class="btn btn-secondary btn-sm" onclick="ModalManager.openIsa()">💰 ISA 납입 입력</button>
+      <button class="btn btn-secondary btn-sm" onclick="ModalManager.openVoo()">📈 VOO 매도 입력</button>
+      <button class="btn btn-warning btn-sm"   onclick="ModalManager.openPlan()">⚙️ 계획 편집</button>
     </div>
   </div>
 
-  <!-- 저장 버튼 -->
+  <!-- ─── 저장 버튼 ─── -->
   <div class="save-row">
-    <span id="save-msg">✅ 저장되었습니다</span>
+    <span id="save-msg">✅ Firebase에 저장되었습니다</span>
     <button class="btn btn-secondary" onclick="clearForm()">초기화</button>
-    <button class="btn btn-success" onclick="saveActual()">💾 저장</button>
+    <button class="btn btn-success" id="btn-save" onclick="saveRecord()">💾 Firebase 저장</button>
   </div>
 
-  <!-- 📈 분석 차트 -->
-  <div class="chart-section" id="chart-section">
+  <!-- ─── 분석 차트 ─── -->
+  <div class="chart-section">
     <div class="chart-header">
       <h2>📈 분석 차트</h2>
       <div class="chart-tabs">
-        <button class="chart-tab active" data-tab="trend"        onclick="switchChartTab('trend')">연금자산 추이</button>
-        <button class="chart-tab"        data-tab="contribution" onclick="switchChartTab('contribution')">납입 달성률</button>
-        <button class="chart-tab"        data-tab="balance"      onclick="switchChartTab('balance')">원금 vs 평가</button>
-        <button class="chart-tab"        data-tab="voo"          onclick="switchChartTab('voo')">VOO 현황</button>
+        <button class="chart-tab active" data-tab="trend"        onclick="Renderer.switchChartTab('trend')">연금자산 추이</button>
+        <button class="chart-tab"        data-tab="contribution" onclick="Renderer.switchChartTab('contribution')">납입 달성률</button>
+        <button class="chart-tab"        data-tab="balance"      onclick="Renderer.switchChartTab('balance')">원금 vs 평가</button>
+        <button class="chart-tab"        data-tab="voo"          onclick="Renderer.switchChartTab('voo')">VOO 현황</button>
       </div>
     </div>
 
@@ -675,11 +250,11 @@
       <div class="chart-controls">
         <span class="ctrl-label">계좌</span>
         <div class="filter-group">
-          <button class="filter-btn active" onclick="selectChartAcct(this,'all')">전체</button>
-          <button class="filter-btn" onclick="selectChartAcct(this,'pension')">연금저축</button>
-          <button class="filter-btn" onclick="selectChartAcct(this,'irp')">IRP</button>
-          <button class="filter-btn" onclick="selectChartAcct(this,'isa')">ISA</button>
-          <button class="filter-btn" onclick="selectChartAcct(this,'ria')">RIA</button>
+          <button class="filter-btn active" onclick="Renderer.selectTrendAcct(this,'all')">전체</button>
+          <button class="filter-btn" onclick="Renderer.selectTrendAcct(this,'pension')">연금저축</button>
+          <button class="filter-btn" onclick="Renderer.selectTrendAcct(this,'irp')">IRP</button>
+          <button class="filter-btn" onclick="Renderer.selectTrendAcct(this,'isa')">ISA</button>
+          <button class="filter-btn" onclick="Renderer.selectTrendAcct(this,'ria')">RIA</button>
         </div>
       </div>
       <div class="chart-canvas-wrap"><canvas id="chart-trend"></canvas></div>
@@ -692,7 +267,7 @@
     <div class="chart-pane" id="pane-contribution">
       <div class="chart-controls">
         <span class="ctrl-label">연도</span>
-        <select id="ctrl-year" onchange="renderChart_contribution()"></select>
+        <select id="ctrl-year" onchange="Renderer.renderCharts()"></select>
       </div>
       <div class="chart-canvas-wrap"><canvas id="chart-contribution"></canvas></div>
       <p class="no-chart-data" id="no-contribution" style="display:none">납입 데이터가 없습니다.</p>
@@ -702,7 +277,7 @@
     <div class="chart-pane" id="pane-balance">
       <div class="chart-controls">
         <span class="ctrl-label">기준 월</span>
-        <select id="ctrl-month" onchange="renderChart_balance()"></select>
+        <select id="ctrl-month" onchange="Renderer.renderCharts()"></select>
       </div>
       <div class="chart-canvas-wrap"><canvas id="chart-balance"></canvas></div>
       <p class="no-chart-data" id="no-balance" style="display:none">저장된 데이터가 없습니다.</p>
@@ -713,12 +288,12 @@
       <div class="voo-canvas-wrap"><canvas id="chart-voo"></canvas></div>
       <div class="voo-stats" id="voo-stats"></div>
       <p class="no-chart-data" id="no-voo" style="display:none">
-        VOO 양도차익 데이터가 없습니다. 납입/세금 섹션에서 양도차익을 입력하세요.
+        VOO 양도차익 데이터가 없습니다. VOO 매도 입력 버튼으로 업데이트하세요.
       </p>
     </div>
   </div>
 
-  <!-- 이력 테이블 -->
+  <!-- ─── 월별 실적 이력 테이블 ─── -->
   <div class="history-section">
     <h2>📋 월별 실적 이력</h2>
     <div class="table-wrap">
@@ -734,32 +309,34 @@
             <th>RIA</th>
             <th>연금납입</th>
             <th>IRP납입</th>
+            <th>ISA납입</th>
             <th>VOO매도</th>
             <th>양도차익</th>
             <th>세액공제</th>
           </tr>
         </thead>
         <tbody id="history-body">
-          <tr><td colspan="12" class="no-data">저장된 실적이 없습니다.</td></tr>
+          <tr><td colspan="13" class="no-data">Firebase에서 불러오기 후 표시됩니다.</td></tr>
         </tbody>
       </table>
     </div>
   </div>
 
-  <!-- 설정 섹션 -->
-  <div class="settings-section" id="settings-section">
+  <!-- ─── 설정 섹션 ─── -->
+  <div class="settings-section">
     <h2>⚙️ 설정</h2>
     <div class="settings-body">
       <div class="settings-field">
         <label>Firebase Realtime Database URL (MyAssetDashBD 연동)</label>
         <div class="url-input-row">
-          <input type="url" id="settings-gas-url" placeholder="https://your-project-default-rtdb.firebasedatabase.app" />
-          <button class="btn btn-primary" onclick="saveSettingsGasUrl()">저장</button>
-          <button class="btn btn-secondary" onclick="clearGasUrl()">기본값으로</button>
+          <input type="url" id="settings-gas-url"
+            placeholder="https://your-project-default-rtdb.firebasedatabase.app" />
+          <button class="btn btn-primary" onclick="saveSettingsUrl()">저장</button>
+          <button class="btn btn-secondary" onclick="clearSettingsUrl()">기본값으로</button>
         </div>
         <p class="helper">
           기본값: <code>https://my-asset-dashboard-9e6f9-default-rtdb.asia-southeast1.firebasedatabase.app</code><br>
-          데이터는 <code>/asset-data.json</code> 엔드포인트에서 읽습니다. Firebase 프로젝트가 다른 경우에만 변경하세요.
+          데이터는 <code>/asset-data.json</code> 엔드포인트에서 읽습니다.
         </p>
       </div>
     </div>
@@ -767,796 +344,296 @@
 
 </div><!-- /container -->
 
+
+<!-- ════════════════════════════════════════════════════════════
+     모달: IRP 납입 입력
+     ════════════════════════════════════════════════════════════ -->
+<div id="modal-irp" class="modal-overlay" onclick="if(event.target===this)ModalManager.closeIrp()">
+  <div class="modal-box">
+    <div class="modal-title">💰 IRP 납입 입력</div>
+    <div class="modal-desc">
+      선택한 월의 IRP1 납입액을 입력합니다.<br>
+      저장 후 <code>pension-tracker/contributions/irp/{월}</code>에 기록됩니다.
+    </div>
+    <div class="modal-field">
+      <label>기준 월</label>
+      <input type="month" id="irp-month" />
+    </div>
+    <div class="modal-field">
+      <label>IRP1 납입액 (원)</label>
+      <input type="number" id="irp-amount" placeholder="250000" min="0" />
+      <div class="hint">월 계획: 250,000원 (IRP1 연 300만원 ÷ 12)</div>
+    </div>
+    <div class="modal-error" id="irp-error"></div>
+    <div class="modal-actions">
+      <button class="btn btn-secondary" onclick="ModalManager.closeIrp()">취소</button>
+      <button class="btn btn-primary" id="irp-submit" onclick="ModalManager.submitIrp()">✅ 저장</button>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════════════════════
+     모달: ISA 납입 입력
+     ════════════════════════════════════════════════════════════ -->
+<div id="modal-isa" class="modal-overlay" onclick="if(event.target===this)ModalManager.closeIsa()">
+  <div class="modal-box">
+    <div class="modal-title">💰 ISA 납입 입력</div>
+    <div class="modal-desc">
+      선택한 월의 ISA 납입액(VOO 매도 자금)을 입력합니다.<br>
+      저장 후 <code>pension-tracker/contributions/isa/{월}</code>에 기록됩니다.
+    </div>
+    <div class="modal-field">
+      <label>기준 월</label>
+      <input type="month" id="isa-month" />
+    </div>
+    <div class="modal-field">
+      <label>ISA 납입액 (원)</label>
+      <input type="number" id="isa-amount" placeholder="250000" min="0" />
+      <div class="hint">월 계획: 250,000원 (VOO 매도 자금) | ISA 연간 한도: 2,000만원</div>
+    </div>
+    <div class="modal-error" id="isa-error"></div>
+    <div class="modal-actions">
+      <button class="btn btn-secondary" onclick="ModalManager.closeIsa()">취소</button>
+      <button class="btn btn-primary" id="isa-submit" onclick="ModalManager.submitIsa()">✅ 저장</button>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════════════════════
+     모달: VOO 매도 입력
+     ════════════════════════════════════════════════════════════ -->
+<div id="modal-voo" class="modal-overlay" onclick="if(event.target===this)ModalManager.closeVoo()">
+  <div class="modal-box">
+    <div class="modal-title">📈 VOO 매도 입력</div>
+    <div class="modal-desc">
+      연간 누적 VOO 매도금액과 양도차익을 입력합니다 (키움 HTS 조회 기준).<br>
+      연간 기본공제 한도: <strong>250만원</strong> — 초과 시 22% 과세 대상<br>
+      저장 후 <code>pension-tracker/voo/{연도}</code>에 기록됩니다.
+    </div>
+    <div class="modal-field">
+      <label>연도</label>
+      <input type="text" id="voo-year" placeholder="2026" maxlength="4" pattern="\d{4}" />
+    </div>
+    <div class="modal-field">
+      <label>VOO 매도금액 누적 (원, 연간)</label>
+      <input type="number" id="voo-sold" placeholder="0" min="0" />
+    </div>
+    <div class="modal-field">
+      <label>양도차익 누적 YTD (원)</label>
+      <input type="number" id="voo-gain" placeholder="0" min="0" />
+      <div class="hint">💡 키움 HTS → [해외주식/세금] → 양도소득세 조회에서 확인</div>
+    </div>
+    <div class="modal-error" id="voo-error"></div>
+    <div class="modal-actions">
+      <button class="btn btn-secondary" onclick="ModalManager.closeVoo()">취소</button>
+      <button class="btn btn-primary" id="voo-submit" onclick="ModalManager.submitVoo()">✅ 저장</button>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════════════════════
+     모달: 계획 편집
+     ════════════════════════════════════════════════════════════ -->
+<div id="modal-plan" class="modal-overlay" onclick="if(event.target===this)ModalManager.closePlan()">
+  <div class="modal-box wide">
+    <div class="modal-title">⚙️ 납입 계획 편집</div>
+    <div class="modal-desc">
+      월/연간 납입 계획 및 한도를 수정합니다.<br>
+      저장 후 <code>pension-tracker/plan/{기준월}</code>에 기록됩니다.
+    </div>
+    <input type="hidden" id="plan-yearkey" />
+    <div class="plan-grid">
+      <div class="modal-field">
+        <label>연금저축 월 납입 계획 (원)</label>
+        <input type="number" id="plan-pension-monthly" placeholder="1250000" min="0" />
+        <div class="hint">기본: 1,250,000원 (연 1,500만 ÷ 12)</div>
+      </div>
+      <div class="modal-field">
+        <label>IRP1 월 납입 계획 (원)</label>
+        <input type="number" id="plan-irp-monthly" placeholder="250000" min="0" />
+        <div class="hint">기본: 250,000원 (연 300만 ÷ 12)</div>
+      </div>
+      <div class="modal-field">
+        <label>ISA 월 납입 계획 (원)</label>
+        <input type="number" id="plan-isa-monthly" placeholder="250000" min="0" />
+        <div class="hint">VOO 매도 자금 기준</div>
+      </div>
+      <div class="modal-field">
+        <label>연금저축 연간 납입 계획 (원)</label>
+        <input type="number" id="plan-pension-annual" placeholder="15000000" min="0" />
+      </div>
+      <div class="modal-field">
+        <label>IRP1 연간 납입 계획 (원)</label>
+        <input type="number" id="plan-irp1-annual" placeholder="3000000" min="0" />
+      </div>
+      <div class="modal-field">
+        <label>VOO 양도차익 연간 한도 (원)</label>
+        <input type="number" id="plan-voo-limit" placeholder="2500000" min="0" />
+        <div class="hint">기본: 2,500,000원 (연간 기본공제)</div>
+      </div>
+      <div class="modal-field">
+        <label>RIA 개설 예정일</label>
+        <input type="date" id="plan-ria-open" />
+      </div>
+      <div class="modal-field">
+        <label>RIA 만기 예정일</label>
+        <input type="date" id="plan-ria-expiry" />
+        <div class="hint">1년 의무 유지 → 만기 후 ISA 이체</div>
+      </div>
+    </div>
+    <div class="modal-error" id="plan-error"></div>
+    <div class="modal-actions">
+      <button class="btn btn-secondary" onclick="ModalManager.closePlan()">취소</button>
+      <button class="btn btn-primary" id="plan-submit" onclick="ModalManager.submitPlan()">✅ 저장</button>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════════════════════
+     모달: JSON 붙여넣기 (Firebase 접근 불가 폴백)
+     ════════════════════════════════════════════════════════════ -->
+<div id="modal-paste" class="modal-overlay" onclick="if(event.target===this)ModalManager.closePaste()">
+  <div class="modal-box">
+    <div class="modal-title">📋 asset-dashboard JSON 붙여넣기</div>
+    <div class="modal-desc">
+      MyAssetDashBD가 열려 있는 브라우저에서:<br>
+      <strong>F12 → Console</strong>에 아래를 입력 후 복사:
+      <div style="background:var(--surface2);border:1px solid var(--border);border-radius:6px;
+           padding:10px 12px;margin-top:8px;font-family:monospace;font-size:12px;
+           color:#93c5fd;user-select:all">copy(localStorage.getItem('asset-dashboard-v3'))</div>
+    </div>
+    <textarea id="paste-area"
+      placeholder='{"pension-saving":{"val":32396693,"date":"2026-03-14"},"pension-irp1":...}'
+      style="width:100%;height:120px;background:var(--surface2);border:1px solid var(--border);
+             border-radius:6px;color:var(--text);padding:10px 12px;font-size:12px;
+             font-family:monospace;outline:none;resize:vertical;box-sizing:border-box"
+    ></textarea>
+    <div class="modal-error" id="paste-error"></div>
+    <div class="modal-actions">
+      <button class="btn btn-secondary" onclick="ModalManager.closePaste()">취소</button>
+      <button class="btn btn-primary" onclick="ModalManager.applyPaste()">✅ 적용</button>
+    </div>
+  </div>
+</div>
+
+
+<!-- ════════════════════════════════════════════════════════════
+     모듈 로드 순서: config → firebase → render → modal
+     ════════════════════════════════════════════════════════════ -->
+<script src="js/config.js"></script>
+<script src="js/firebase.js"></script>
+<script src="js/render.js"></script>
+<script src="js/modal.js"></script>
+
 <script>
 // ============================================================
-//  Constants & Helpers
+//  앱 초기화 및 이벤트 핸들러
+//  (얇은 글루 코드 — 비즈니스 로직은 각 모듈에)
 // ============================================================
-const STORAGE_KEY    = 'pension-tracker-v1';
-const FB_URL_KEY     = 'firebase_url';
-// MyAssetDashBD의 공개 Firebase Realtime Database URL (기본값)
-const FB_URL_DEFAULT = 'https://my-asset-dashboard-9e6f9-default-rtdb.asia-southeast1.firebasedatabase.app';
 
-const AUTO_FIELDS   = ['f_pension', 'f_irp1', 'f_irp2', 'f_overseas', 'f_ria'];
-const MANUAL_FIELDS = ['f_isa', 'f_c_pension', 'f_c_irp', 'f_voo_sold', 'f_voo_gain_ytd', 'f_tax'];
-
-function fmt(n) {
-  if (n === null || n === undefined || n === '') return '-';
-  return Number(n).toLocaleString('ko-KR') + '원';
-}
-
-function getFirebaseUrl() {
-  return localStorage.getItem(FB_URL_KEY) || FB_URL_DEFAULT;
-}
-
-function setFirebaseUrl(url) {
-  localStorage.setItem(FB_URL_KEY, url.trim());
-}
-
-function getAllRecords() {
-  try {
-    return JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
-  } catch { return {}; }
-}
-
-function saveRecord(month, data) {
-  const all = getAllRecords();
-  all[month] = data;
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(all));
-}
-
-// ============================================================
-//  Init
-// ============================================================
 window.addEventListener('DOMContentLoaded', () => {
-  // Set default month to current YYYY-MM
-  const now = new Date();
-  const ym = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
-  document.getElementById('input-month').value = ym;
+  // 현재 월 설정
+  document.getElementById('input-month').value = todayYM();
 
-  // Show/hide Firebase URL banner
-  checkFirebaseUrlBanner();
+  // 렌더러 초기화 (URL 표시 등)
+  Renderer.init();
 
-  // Populate settings URL field (show current or default)
-  document.getElementById('settings-gas-url').value = getFirebaseUrl();
-
-  // Load existing data for this month if any
-  loadMonthData();
-
-  // Render history
-  renderHistory();
-
-  // Init charts
-  initCharts();
-
-  // Header timestamp
-  document.getElementById('header-ts').textContent = `오늘: ${new Date().toLocaleDateString('ko-KR')}`;
+  // 초기 Firebase 불러오기
+  loadFromFirebase();
 });
 
-// ============================================================
-//  Firebase URL Banner (기본 URL이 있으므로 커스텀 URL 입력 시에만 배너 표시)
-// ============================================================
-function checkFirebaseUrlBanner() {
-  // 기본 URL이 있으므로 배너는 항상 숨김 (설정 섹션에서 변경 가능)
-  document.getElementById('gas-url-banner').style.display = 'none';
-}
-
-function saveBannerGasUrl() {
-  const val = document.getElementById('banner-gas-url').value.trim();
-  if (!val) { alert('URL을 입력해주세요.'); return; }
-  setFirebaseUrl(val);
-  document.getElementById('settings-gas-url').value = val;
-  setSyncStatus('success', '✅ URL 저장됨');
-}
-
-function saveSettingsGasUrl() {
-  const val = document.getElementById('settings-gas-url').value.trim();
-  if (!val) { alert('URL을 입력해주세요.'); return; }
-  setFirebaseUrl(val);
-  setSyncStatus('success', '✅ Firebase URL 저장됨');
-}
-
-function clearGasUrl() {
-  if (!confirm('커스텀 Firebase URL을 삭제하고 기본값으로 되돌리겠습니까?')) return;
-  localStorage.removeItem(FB_URL_KEY);
-  document.getElementById('settings-gas-url').value = FB_URL_DEFAULT;
-  setSyncStatus('idle', '대기중');
-}
-
-// ============================================================
-//  Sync status helper
-// ============================================================
-function setSyncStatus(type, text) {
-  const el = document.getElementById('sync-status');
-  el.className = `status-${type}`;
-  el.textContent = text;
-}
-
-// ============================================================
-//  loadFromMyAssetDashBD  ← 핵심 함수
-// ============================================================
-async function loadFromMyAssetDashBD() {
-  const fbBase = getFirebaseUrl().replace(/\/$/, '');
-  const url = `${fbBase}/asset-data.json`;
-
+// ── Firebase 불러오기 ─────────────────────────────────────────
+async function loadFromFirebase() {
   const btn = document.getElementById('btn-sync');
   btn.disabled = true;
-  setSyncStatus('loading', '⏳ 불러오는 중…');
+  Renderer.setSyncStatus('loading', '⏳ 불러오는 중…');
 
   try {
-    const res = await fetch(url, { method: 'GET' });
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-
-    const data = await res.json();
-    if (!data) throw new Error('Firebase에 저장된 데이터가 없습니다');
-
-    applyDashboardData(data);
-
+    const data = await FirebaseService.fetchAll();
+    Renderer.applyFirebaseData(data);
   } catch (err) {
-    console.error('[Pension Tracker] Firebase 호출 실패:', err);
+    console.error('[PensionTracer] Firebase 호출 실패:', err);
     let hint = err.message;
     if (err.message.includes('404')) {
-      hint = 'HTTP 404 — Firebase 규칙이 비공개이거나 데이터가 없습니다. 아래 JSON 붙여넣기 방식을 사용하세요.';
-    } else if (err.message.includes('403') || err.message.includes('401')) {
-      hint = `HTTP ${err.message.match(/\d+/)?.[0]} — Firebase 보안 규칙이 읽기를 차단합니다. JSON 붙여넣기 방식을 사용하세요.`;
+      hint = 'HTTP 404 — Firebase 규칙이 비공개이거나 데이터가 없습니다. JSON 붙여넣기를 사용하세요.';
+    } else if (/40[13]/.test(err.message)) {
+      hint = 'Firebase 보안 규칙이 읽기를 차단합니다. JSON 붙여넣기를 사용하세요.';
     } else if (err.message.includes('Failed to fetch') || err.message.includes('NetworkError')) {
       hint = '네트워크 오류. 인터넷 연결 또는 Firebase URL을 확인하세요.';
     }
-    setSyncStatus('error', `❌ ${hint}`);
-    showFallbackNotice(hint);
+    Renderer.setSyncStatus('error', `❌ ${hint}`);
+    Renderer.showDateWarning(`⚠️ 자동 불러오기 실패: ${hint}`);
   } finally {
     btn.disabled = false;
   }
 }
 
-// ============================================================
-//  applyDashboardData  — Firebase 응답 → 폼 채우기
-// ============================================================
-function applyDashboardData(data) {
-  // Firebase 응답 구조: { state: { 'pension-saving': { val, date }, ... }, kiwoom: {...} }
-  const state = data.state || {};
-
-  // Key extraction helper
-  function getField(key) {
-    const v = state[key];
-    if (v === null || v === undefined) return null;
-    if (typeof v === 'object' && 'val' in v) return v;
-    if (typeof v === 'number') return { val: v, date: null };
-    return null;
-  }
-
-  const mapping = [
-    { gasKey: 'pension-saving',  fieldId: 'f_pension',  badgeId: 'badge-pension',  mlId: 'ml-pension'  },
-    { gasKey: 'pension-irp1',    fieldId: 'f_irp1',     badgeId: 'badge-irp1',     mlId: 'ml-irp1'     },
-    { gasKey: 'pension-irp2',    fieldId: 'f_irp2',     badgeId: 'badge-irp2',     mlId: 'ml-irp2'     },
-    { gasKey: 'kiwoom-overseas', fieldId: 'f_overseas', badgeId: 'badge-overseas', mlId: 'ml-overseas' },
-    { gasKey: 'kiwoom-obil',     fieldId: 'f_ria',      badgeId: 'badge-ria',      mlId: 'ml-ria'      },
-  ];
-
-  let successCount = 0;
-  const dataDates = [];
-
-  mapping.forEach(({ gasKey, fieldId, badgeId, mlId }) => {
-    const entry = getField(gasKey);
-    const input = document.getElementById(fieldId);
-    const badge = document.getElementById(badgeId);
-    const ml    = document.getElementById(mlId);
-
-    if (entry && entry.val !== null && entry.val !== undefined) {
-      input.value = entry.val;
-      input.classList.add('auto-filled');
-      input.classList.remove('manual-needed');
-      if (badge) {
-        badge.textContent = `불러옴: ${entry.date || '날짜 없음'}`;
-        badge.style.display = 'inline';
-      }
-      if (ml) ml.style.display = 'none';
-      if (entry.date) dataDates.push(entry.date);
-      successCount++;
-    } else {
-      // Could not fill — mark as manual
-      input.classList.add('manual-needed');
-      input.classList.remove('auto-filled');
-      if (badge) badge.style.display = 'none';
-      if (ml) ml.style.display = 'block';
-    }
-  });
-
-  // Date mismatch check
-  checkDateMismatch(dataDates);
-
-  if (successCount > 0) {
-    setSyncStatus('success', `✅ ${successCount}개 항목 불러옴`);
-  } else {
-    setSyncStatus('error', '❌ 데이터 없음');
-    showFallbackNotice('Firebase 응답에서 state 데이터를 찾을 수 없습니다. MyAssetDashBD에서 동기화 후 재시도하세요.');
-  }
-}
-
-// ============================================================
-//  Date mismatch warning
-// ============================================================
-function checkDateMismatch(dataDates) {
-  const warn = document.getElementById('date-warning');
-  const selectedMonth = document.getElementById('input-month').value; // YYYY-MM
-  if (!selectedMonth || dataDates.length === 0) { warn.style.display = 'none'; return; }
-
-  const mismatches = dataDates.filter(d => !d.startsWith(selectedMonth));
-  if (mismatches.length > 0) {
-    const uniq = [...new Set(dataDates)].join(', ');
-    warn.innerHTML = `⚠️ 데이터 기준일: ${uniq} — 선택한 월(${selectedMonth})의 월말 기준이 아닐 수 있습니다. 확인 후 저장하세요.`;
-    warn.style.display = 'block';
-  } else {
-    warn.style.display = 'none';
-  }
-}
-
-// ============================================================
-//  Fallback notice
-// ============================================================
-function showFallbackNotice(reason) {
-  const warn = document.getElementById('date-warning');
-  warn.innerHTML = `⚠️ 자동 불러오기 실패 (${reason})<br>
-    수동 입력 모드로 전환합니다. 아래 강조된 항목을 직접 입력해주세요.<br>
-    Firebase URL이 올바른지 확인하거나 페이지 하단 <strong>설정</strong> 섹션에서 URL을 업데이트하세요.`;
-  warn.style.display = 'block';
-  // Mark all auto fields as needing manual input
-  AUTO_FIELDS.forEach(id => {
-    const el = document.getElementById(id);
-    if (el && !el.value) {
-      el.classList.add('manual-needed');
-      el.classList.remove('auto-filled');
-    }
-  });
-}
-
-// ============================================================
-//  saveActual  — 폼 → localStorage
-// ============================================================
-function saveActual() {
+// ── 기준 월 변경 ──────────────────────────────────────────────
+function onMonthChange() {
   const month = document.getElementById('input-month').value;
-  if (!month) { alert('입력 월을 선택해주세요.'); return; }
-
-  const data = {
-    f_pension:      document.getElementById('f_pension').value      || null,
-    f_irp1:         document.getElementById('f_irp1').value         || null,
-    f_irp2:         document.getElementById('f_irp2').value         || null,
-    f_isa:          document.getElementById('f_isa').value          || null,
-    f_overseas:     document.getElementById('f_overseas').value     || null,
-    f_ria:          document.getElementById('f_ria').value          || null,
-    f_c_pension:    document.getElementById('f_c_pension').value    || null,
-    f_c_irp:        document.getElementById('f_c_irp').value        || null,
-    f_voo_sold:     document.getElementById('f_voo_sold').value     || null,
-    f_voo_gain_ytd: document.getElementById('f_voo_gain_ytd').value || null,
-    f_tax:          document.getElementById('f_tax').value          || null,
-    _savedAt: new Date().toISOString(),
-  };
-
-  saveRecord(month, data);
-  renderHistory();
-  _renderChart();
-
-  const msg = document.getElementById('save-msg');
-  msg.classList.add('show');
-  setTimeout(() => msg.classList.remove('show'), 2500);
+  Renderer.refreshContribDisplay(month);
+  Renderer.refreshVooDisplay(month ? month.slice(0, 4) : currentYear());
 }
 
-// ============================================================
-//  loadMonthData  — localStorage → 폼
-// ============================================================
-function loadMonthData() {
+// ── 기존 레코드 불러오기 ─────────────────────────────────────
+function loadMonthRecord() {
   const month = document.getElementById('input-month').value;
-  if (!month) return;
-  const all = getAllRecords();
-  const saved = all[month];
-  if (!saved) return;
-
-  const fields = ['f_pension','f_irp1','f_irp2','f_isa','f_overseas','f_ria',
-                  'f_c_pension','f_c_irp','f_voo_sold','f_voo_gain_ytd','f_tax'];
-  fields.forEach(id => {
-    const el = document.getElementById(id);
-    if (el && saved[id] !== null && saved[id] !== undefined) {
-      el.value = saved[id];
-    }
-  });
+  Renderer.fillFormFromRecord(month);
 }
 
-// ============================================================
-//  clearForm
-// ============================================================
-function clearForm() {
-  const allFields = [...AUTO_FIELDS, ...MANUAL_FIELDS];
-  allFields.forEach(id => {
-    const el = document.getElementById(id);
-    if (!el) return;
-    el.value = '';
-    el.classList.remove('auto-filled');
-    // Restore manual-needed class for manual fields
-    if (MANUAL_FIELDS.includes(id)) {
-      el.classList.add('manual-needed');
-    } else {
-      el.classList.remove('manual-needed');
-    }
-  });
-  // Hide badges
-  ['badge-pension','badge-irp1','badge-irp2','badge-overseas','badge-ria'].forEach(id => {
-    const el = document.getElementById(id);
-    if (el) el.style.display = 'none';
-  });
-  // Hide manual labels for auto fields
-  ['ml-pension','ml-irp1','ml-irp2','ml-overseas','ml-ria'].forEach(id => {
-    const el = document.getElementById(id);
-    if (el) el.style.display = 'none';
-  });
-  document.getElementById('date-warning').style.display = 'none';
-  setSyncStatus('idle', '대기중');
-}
+// ── Firebase 저장 ─────────────────────────────────────────────
+async function saveRecord() {
+  const month = document.getElementById('input-month').value;
+  if (!month) { alert('기준 월을 선택해주세요.'); return; }
 
-// ============================================================
-//  renderHistory
-// ============================================================
-//  JSON 붙여넣기 모달 (Firebase 접근 실패 시 폴백)
-// ============================================================
-function openPasteModal() {
-  document.getElementById('paste-modal').style.display = 'flex';
-  document.getElementById('paste-area').value = '';
-  document.getElementById('paste-error').style.display = 'none';
-}
+  const record = Renderer.collectFormData(month);
+  const btn    = document.getElementById('btn-save');
+  btn.disabled = true;
 
-function closePasteModal() {
-  document.getElementById('paste-modal').style.display = 'none';
-}
-
-function applyPasteJson() {
-  const raw = document.getElementById('paste-area').value.trim();
-  const errEl = document.getElementById('paste-error');
-  errEl.style.display = 'none';
-
-  let parsed;
   try {
-    parsed = JSON.parse(raw);
-  } catch {
-    errEl.textContent = 'JSON 형식이 올바르지 않습니다. Console에서 복사한 값을 그대로 붙여넣으세요.';
-    errEl.style.display = 'block';
-    return;
+    await FirebaseService.saveRecord(month, record);
+    AppState.records[month] = { ...record, savedAt: new Date().toISOString() };
+    Renderer.renderHistory();
+    Renderer.renderCharts();
+    const msg = document.getElementById('save-msg');
+    msg.classList.add('show');
+    setTimeout(() => msg.classList.remove('show'), 2500);
+  } catch (err) {
+    alert(`저장 실패: ${err.message}`);
+  } finally {
+    btn.disabled = false;
   }
-
-  // asset-dashboard-v3 구조 그대로 state로 사용
-  applyDashboardData({ state: parsed });
-  closePasteModal();
 }
 
-// ============================================================
-//  CHART MODULE
-// ============================================================
-
-const PLAN_CONST = {
-  pension_monthly:  1250000,   // 연금저축 월 125만
-  irp1_monthly:      250000,   // IRP1 월 25만
-  isa_monthly:       250000,   // ISA 월 25만 (VOO 매도)
-  pension_annual:  15000000,   // 연금저축 연 1,500만
-  irp1_annual:      3000000,   // IRP1 연 300만
-  voo_gain_limit:   2500000,   // VOO 양도차익 연간 기본공제 한도
-};
-
-const CC = {                   // chart colors
-  pension: '#4f8ef7',
-  irp1:    '#34d399',
-  irp2:    '#a78bfa',
-  isa:     '#fbbf24',
-  ria:     '#fb923c',
-  invest:  '#2a4a8a',
-  plan:    '#4a5568',
-};
-
-let _tab  = 'trend';
-let _acct = 'all';
-let _ci   = {};                // chart instances
-
-function _kill(k) {
-  if (_ci[k]) { _ci[k].destroy(); _ci[k] = null; }
+// ── 폼 초기화 ─────────────────────────────────────────────────
+function clearForm() {
+  Renderer.clearForm();
+  Renderer.setSyncStatus('idle', '대기중');
 }
 
-// 만원/억원 단위 포맷 (차트 축용)
-function fmtW(v) {
-  if (v == null || isNaN(v)) return '0';
-  const n = Number(v), abs = Math.abs(n);
-  if (abs >= 100000000) return (n / 100000000).toFixed(1) + '억';
-  if (abs >= 10000)     return Math.round(n / 10000) + '만';
-  return n.toLocaleString('ko-KR');
+// ── 설정: URL 저장 / 기본값 복원 ─────────────────────────────
+function saveBannerUrl() {
+  const val = document.getElementById('banner-gas-url').value.trim();
+  if (!val) { alert('URL을 입력해주세요.'); return; }
+  FirebaseService.setUrl(val);
+  document.getElementById('settings-gas-url').value = val;
+  Renderer.setSyncStatus('success', '✅ URL 저장됨');
 }
 
-// 공통 Chart.js 옵션 (다크 테마)
-function _baseOpts() {
-  return {
-    responsive: true,
-    maintainAspectRatio: false,
-    plugins: {
-      legend: { labels: { color: '#e2e8f0', font: { size: 12 }, boxWidth: 16 } },
-    },
-    scales: {
-      x: { ticks: { color: '#7a8499', font: { size: 11 } }, grid: { color: '#2e3247' } },
-      y: { ticks: { color: '#7a8499', font: { size: 11 }, callback: v => fmtW(v) }, grid: { color: '#2e3247' } },
-    },
-  };
+function saveSettingsUrl() {
+  const val = document.getElementById('settings-gas-url').value.trim();
+  if (!val) { alert('URL을 입력해주세요.'); return; }
+  FirebaseService.setUrl(val);
+  Renderer.setSyncStatus('success', '✅ Firebase URL 저장됨');
 }
 
-// ─── 탭 전환 ──────────────────────────────────────────────────
-function switchChartTab(tab) {
-  _tab = tab;
-  document.querySelectorAll('.chart-tab').forEach(b =>
-    b.classList.toggle('active', b.dataset.tab === tab));
-  document.querySelectorAll('.chart-pane').forEach(p =>
-    p.classList.toggle('active', p.id === 'pane-' + tab));
-  _renderChart();
-}
-
-function selectChartAcct(btn, acct) {
-  _acct = acct;
-  btn.closest('.filter-group').querySelectorAll('.filter-btn')
-     .forEach(b => b.classList.remove('active'));
-  btn.classList.add('active');
-  _renderChart();
-}
-
-function _renderChart() {
-  const all = getAllRecords();
-  if      (_tab === 'trend')        renderChart_trend(all);
-  else if (_tab === 'contribution') renderChart_contribution(all);
-  else if (_tab === 'balance')      renderChart_balance(all);
-  else if (_tab === 'voo')          renderChart_voo(all);
-}
-
-// ─── Chart 1: 연금자산 추이 (Line) ───────────────────────────
-function renderChart_trend(all) {
-  _kill('trend');
-  const data   = all || getAllRecords();
-  const months = Object.keys(data).sort();
-  const canvas = document.getElementById('chart-trend');
-  const noEl   = document.getElementById('no-trend');
-
-  if (months.length < 2) {
-    canvas.style.display = 'none';
-    noEl.style.display = 'block';
-    return;
-  }
-  canvas.style.display = 'block';
-  noEl.style.display = 'none';
-
-  const g = (m, keys) => keys.reduce((s, k) => s + Number(data[m][k] || 0), 0);
-  const datasets = [];
-
-  if (_acct === 'all') {
-    // 계좌별 개별 라인
-    [
-      { label: '연금저축', keys: ['f_pension'],       color: CC.pension },
-      { label: 'IRP',     keys: ['f_irp1','f_irp2'], color: CC.irp1   },
-      { label: 'ISA',     keys: ['f_isa'],            color: CC.isa    },
-      { label: 'RIA',     keys: ['f_ria'],            color: CC.ria    },
-    ].forEach(({ label, keys, color }) => {
-      const d2 = months.map(m => g(m, keys));
-      if (d2.some(v => v > 0)) {
-        datasets.push({
-          label, data: d2,
-          borderColor: color, backgroundColor: color + '18',
-          fill: false, tension: 0.35, pointRadius: 3, borderWidth: 1.5,
-        });
-      }
-    });
-
-    // 합계 굵은 라인 (맨 앞에)
-    const totalData = months.map(m => g(m, ['f_pension','f_irp1','f_irp2','f_isa','f_ria']));
-    datasets.unshift({
-      label: '연금자산 합계',
-      data: totalData,
-      borderColor: '#ffffff', backgroundColor: 'transparent',
-      fill: false, tension: 0.35, pointRadius: 5, pointHoverRadius: 7, borderWidth: 2.5,
-    });
-
-    // 누적 계획 납입 점선 (추적 시작 월 기준 상대)
-    const [fy, fm] = months[0].split('-').map(Number);
-    const planData = months.map(m => {
-      const [y, mo] = m.split('-').map(Number);
-      const n = (y - fy) * 12 + (mo - fm) + 1;
-      return n * (PLAN_CONST.pension_monthly + PLAN_CONST.irp1_monthly);
-    });
-    datasets.push({
-      label: '누적 계획 납입 (월 150만 기준)',
-      data: planData,
-      borderColor: CC.plan, backgroundColor: 'transparent',
-      fill: false, tension: 0, pointRadius: 0, borderWidth: 1.5,
-      borderDash: [6, 3],
-    });
-
-  } else {
-    const map = {
-      pension: { keys: ['f_pension'],       color: CC.pension, label: '연금저축' },
-      irp:     { keys: ['f_irp1','f_irp2'], color: CC.irp1,   label: 'IRP' },
-      isa:     { keys: ['f_isa'],           color: CC.isa,    label: 'ISA' },
-      ria:     { keys: ['f_ria'],           color: CC.ria,    label: 'RIA' },
-    };
-    const { keys, color, label } = map[_acct];
-    datasets.push({
-      label, data: months.map(m => g(m, keys)),
-      borderColor: color, backgroundColor: color + '25',
-      fill: true, tension: 0.35, pointRadius: 4, pointHoverRadius: 6, borderWidth: 2,
-    });
-  }
-
-  const opts = _baseOpts();
-  opts.interaction = { mode: 'index', intersect: false };
-  opts.plugins.tooltip = {
-    callbacks: { label: ctx => ` ${ctx.dataset.label}: ${fmtW(ctx.raw)}원` }
-  };
-  _ci.trend = new Chart(canvas, { type: 'line', data: { labels: months, datasets }, options: opts });
-}
-
-// ─── Chart 2: 납입 달성률 (Horizontal Bar) ───────────────────
-function renderChart_contribution(all) {
-  _kill('contribution');
-  const data   = all || getAllRecords();
-  const months = Object.keys(data).sort();
-  const canvas = document.getElementById('chart-contribution');
-  const noEl   = document.getElementById('no-contribution');
-
-  // 연도 셀렉터 구성
-  const years = [...new Set(months.map(m => m.slice(0, 4)))].sort().reverse();
-  const sel   = document.getElementById('ctrl-year');
-  if (!years.length) {
-    canvas.style.display = 'none'; noEl.style.display = 'block'; return;
-  }
-  if (sel.options.length === 0) {
-    sel.innerHTML = years.map(y => `<option>${y}</option>`).join('');
-  }
-  const year = sel.value || years[0];
-  canvas.style.display = 'block'; noEl.style.display = 'none';
-
-  // YTD 실적 합산
-  let pensionActual = 0, irpActual = 0;
-  Object.entries(data).forEach(([m, d]) => {
-    if (m.startsWith(year)) {
-      pensionActual += Number(d.f_c_pension || 0);
-      irpActual     += Number(d.f_c_irp     || 0);
-    }
-  });
-
-  // 현시점 계획 (경과 개월수)
-  const now     = new Date();
-  const elapsed = parseInt(year) < now.getFullYear() ? 12
-                : parseInt(year) > now.getFullYear() ? 0
-                : now.getMonth() + 1;
-  const pensionPlan = PLAN_CONST.pension_monthly * elapsed;
-  const irpPlan     = PLAN_CONST.irp1_monthly    * elapsed;
-
-  const labels  = ['연금저축', 'IRP1'];
-  const annuals = [PLAN_CONST.pension_annual, PLAN_CONST.irp1_annual];
-  const planPro = [pensionPlan, irpPlan];
-  const actuals = [pensionActual, irpActual];
-  const pcts    = actuals.map((a, i) => annuals[i] > 0 ? Math.round(a / annuals[i] * 100) : 0);
-
-  const opts = {
-    indexAxis: 'y',
-    responsive: true, maintainAspectRatio: false,
-    plugins: {
-      legend: { labels: { color: '#e2e8f0', font: { size: 12 }, boxWidth: 16 } },
-      tooltip: {
-        callbacks: {
-          label: ctx => {
-            const v = Number(ctx.raw).toLocaleString('ko-KR');
-            if (ctx.datasetIndex === 0) return ` 연간 목표: ${v}원`;
-            if (ctx.datasetIndex === 1) return ` 현시점 계획 (${elapsed}개월): ${v}원`;
-            return ` 실적: ${v}원  (연간 목표 ${pcts[ctx.dataIndex]}%)`;
-          }
-        }
-      }
-    },
-    scales: {
-      x: { ticks: { color: '#7a8499', font: { size: 11 }, callback: v => fmtW(v) }, grid: { color: '#2e3247' } },
-      y: { ticks: { color: '#e2e8f0', font: { size: 13 } }, grid: { color: '#2e3247' } },
-    },
-  };
-
-  _ci.contribution = new Chart(canvas, {
-    type: 'bar',
-    data: {
-      labels,
-      datasets: [
-        { label: '연간 목표',    data: annuals, backgroundColor: '#1a2236', borderColor: CC.plan, borderWidth: 1, borderRadius: 4 },
-        { label: '현시점 계획', data: planPro, backgroundColor: CC.invest, borderRadius: 4 },
-        { label: '실적',        data: actuals, backgroundColor: [CC.pension, CC.irp1], borderRadius: 4 },
-      ]
-    },
-    options: opts,
-  });
-}
-
-// ─── Chart 3: 원금 vs 평가금액 (Grouped Bar) ─────────────────
-function renderChart_balance(all) {
-  _kill('balance');
-  const data   = all || getAllRecords();
-  const months = Object.keys(data).sort();
-  const canvas = document.getElementById('chart-balance');
-  const noEl   = document.getElementById('no-balance');
-
-  if (!months.length) {
-    canvas.style.display = 'none'; noEl.style.display = 'block'; return;
-  }
-
-  // 월 셀렉터 구성
-  const sel = document.getElementById('ctrl-month');
-  if (sel.options.length === 0) {
-    sel.innerHTML = [...months].reverse().map(m => `<option>${m}</option>`).join('');
-  }
-  const selM = sel.value || months[months.length - 1];
-  const d    = data[selM];
-  if (!d) { canvas.style.display = 'none'; noEl.style.display = 'block'; return; }
-  canvas.style.display = 'block'; noEl.style.display = 'none';
-
-  // 누적 납입원금 (selM 이하 전체 합산)
-  let pInvest = 0, irpInvest = 0;
-  Object.entries(data).forEach(([m, rec]) => {
-    if (m <= selM) {
-      pInvest    += Number(rec.f_c_pension || 0);
-      irpInvest  += Number(rec.f_c_irp     || 0);
-    }
-  });
-
-  const accounts = [
-    { label: '연금저축', invest: pInvest,   bal: Number(d.f_pension || 0), color: CC.pension },
-    { label: 'IRP1',    invest: irpInvest, bal: Number(d.f_irp1    || 0), color: CC.irp1   },
-    { label: 'IRP2',    invest: 0,         bal: Number(d.f_irp2    || 0), color: CC.irp2   },
-    { label: 'ISA',     invest: 0,         bal: Number(d.f_isa     || 0), color: CC.isa    },
-    { label: 'RIA',     invest: 0,         bal: Number(d.f_ria     || 0), color: CC.ria    },
-  ].filter(a => a.bal > 0 || a.invest > 0);
-
-  const opts = _baseOpts();
-  opts.plugins.tooltip = {
-    callbacks: {
-      label: ctx => {
-        const a = accounts[ctx.dataIndex];
-        if (ctx.dataset.label === '평가금액' && a.invest > 0) {
-          const gain = a.bal - a.invest;
-          const pct  = (gain / a.invest * 100).toFixed(1);
-          const sign = gain >= 0 ? '+' : '';
-          return ` 평가금액: ${fmtW(a.bal)}원  (${sign}${fmtW(gain)}원, ${sign}${pct}%)`;
-        }
-        const tag = a.invest === 0 && ctx.dataset.label === '누적 납입원금' ? ' (미추적)' : '';
-        return ` ${ctx.dataset.label}: ${fmtW(ctx.raw)}원${tag}`;
-      }
-    }
-  };
-
-  _ci.balance = new Chart(canvas, {
-    type: 'bar',
-    data: {
-      labels: accounts.map(a => a.label),
-      datasets: [
-        {
-          label: '누적 납입원금',
-          data: accounts.map(a => a.invest),
-          backgroundColor: CC.invest,
-          borderRadius: 4,
-        },
-        {
-          label: '평가금액',
-          data: accounts.map(a => a.bal),
-          backgroundColor: accounts.map(a =>
-            a.invest === 0 ? a.color + 'aa'              // 원금 미추적 → 계좌색
-            : a.bal >= a.invest ? '#34d399' : '#f87171'  // 수익 or 손실
-          ),
-          borderRadius: 4,
-        },
-      ]
-    },
-    options: opts,
-  });
-}
-
-// ─── Chart 4: VOO 양도차익 (Doughnut) ────────────────────────
-function renderChart_voo(all) {
-  _kill('voo');
-  const data   = all || getAllRecords();
-  const canvas = document.getElementById('chart-voo');
-  const noEl   = document.getElementById('no-voo');
-  const stats  = document.getElementById('voo-stats');
-
-  // 가장 최근 양도차익 데이터 사용
-  let gainYtd = null;
-  Object.keys(data).sort().reverse().forEach(m => {
-    if (gainYtd === null && data[m].f_voo_gain_ytd != null && data[m].f_voo_gain_ytd !== '') {
-      gainYtd = Number(data[m].f_voo_gain_ytd);
-    }
-  });
-
-  if (gainYtd === null) {
-    canvas.style.display = 'none';
-    noEl.style.display = 'block';
-    stats.innerHTML = '';
-    return;
-  }
-  canvas.style.display = 'block';
-  noEl.style.display = 'none';
-
-  const limit     = PLAN_CONST.voo_gain_limit;
-  const used      = Math.min(gainYtd, limit);
-  const remaining = Math.max(0, limit - gainYtd);
-  const over      = Math.max(0, gainYtd - limit);
-  const pct       = Math.min(100, Math.round(gainYtd / limit * 100));
-
-  stats.innerHTML = `
-    <div style="display:flex;justify-content:center;gap:20px;flex-wrap:wrap;font-size:13px;margin-top:8px">
-      <span>실현 차익: <strong style="color:#4f8ef7">${gainYtd.toLocaleString('ko-KR')}원</strong></span>
-      <span>연간 한도: <strong style="color:#7a8499">250만원</strong></span>
-      <span>잔여: <strong style="color:${remaining > 0 ? '#34d399' : '#f87171'}">${remaining.toLocaleString('ko-KR')}원</strong></span>
-    </div>
-    <div style="font-size:12px;margin-top:6px;color:${over > 0 ? '#f87171' : '#34d399'}">
-      ${over > 0
-        ? `⚠️ 한도 초과 ${over.toLocaleString('ko-KR')}원 → 22% 과세 대상`
-        : `✅ 한도 내 (${pct}% 사용)  |  VOO 추가 매도 가능: ${remaining.toLocaleString('ko-KR')}원 이하`}
-    </div>
-  `;
-
-  _ci.voo = new Chart(canvas, {
-    type: 'doughnut',
-    data: {
-      labels: over > 0
-        ? ['기본공제 한도(250만)', '과세 초과분']
-        : ['실현 양도차익', '잔여 한도'],
-      datasets: [{
-        data: over > 0 ? [limit, over] : [used, remaining],
-        backgroundColor: over > 0
-          ? ['#f87171', '#450a0a']
-          : ['#4f8ef7', '#1a2236'],
-        borderWidth: 0,
-        hoverOffset: 8,
-      }]
-    },
-    options: {
-      responsive: true, maintainAspectRatio: false,
-      cutout: '62%',
-      plugins: {
-        legend: { labels: { color: '#e2e8f0', font: { size: 12 }, boxWidth: 14 } },
-        tooltip: {
-          callbacks: { label: ctx => ` ${ctx.label}: ${Number(ctx.raw).toLocaleString('ko-KR')}원` }
-        }
-      }
-    }
-  });
-}
-
-// ─── initCharts ───────────────────────────────────────────────
-function initCharts() {
-  renderChart_trend(getAllRecords());
-}
-
-// ============================================================
-function renderHistory() {
-  const all = getAllRecords();
-  const tbody = document.getElementById('history-body');
-  const months = Object.keys(all).sort().reverse();
-
-  if (months.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="12" class="no-data">저장된 실적이 없습니다.</td></tr>';
-    return;
-  }
-
-  tbody.innerHTML = months.map(m => {
-    const d = all[m];
-    return `<tr>
-      <td>${m}</td>
-      <td>${fmt(d.f_pension)}</td>
-      <td>${fmt(d.f_irp1)}</td>
-      <td>${fmt(d.f_irp2)}</td>
-      <td>${fmt(d.f_isa)}</td>
-      <td>${fmt(d.f_overseas)}</td>
-      <td>${fmt(d.f_ria)}</td>
-      <td>${fmt(d.f_c_pension)}</td>
-      <td>${fmt(d.f_c_irp)}</td>
-      <td>${fmt(d.f_voo_sold)}</td>
-      <td>${fmt(d.f_voo_gain_ytd)}</td>
-      <td>${fmt(d.f_tax)}</td>
-    </tr>`;
-  }).join('');
+function clearSettingsUrl() {
+  if (!confirm('기본 URL로 되돌리겠습니까?')) return;
+  FirebaseService.clearUrl();
+  document.getElementById('settings-gas-url').value = FIREBASE_URL_DEFAULT;
+  Renderer.setSyncStatus('idle', '대기중');
 }
 </script>
+
 </body>
 </html>

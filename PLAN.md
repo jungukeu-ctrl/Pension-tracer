@@ -21,9 +21,18 @@ asset-data/
   kiwoom/
     combined: [
       { month: "YYYY-MM", date: "YYYY-MM-DD", eval: [...], invest: [...] }
-      ← eval[] = 월별 평가금액(잔액)
-      ← invest[3] = 연금저축 누적투자금 (이체내역 모달로 관리)
+      ← eval[]    = 월별 평가금액(잔액) — 인덱스 구조 invest[]와 동일
+      ← invest[0] = 해외주식 누적투자금
+      ← invest[1] = OBil 누적투자금
+      ← invest[2] = 자사주 누적투자금
+      ← invest[3] = 개인연금저축 누적투자금  ← 💰 삼성증권종합잔고거래내역 JSON 자동 계산 (applyTransferData, idx=3)
+      ← invest[7] = IRP1(유정욱) 누적투자금  ← state['irp1'].val 수동 입력 (만원→원 변환), JSON 자동화 미적용
+      ← invest[8] = IRP2(개인형) 누적투자금  ← state['irp2'].val 수동 입력 (만원→원 변환), JSON 자동화 미적용
+      (출처: MyAssetDashBD/js/export.js AI_NAMES 배열, modal.js applyTransferData)
     ]
+  state/
+    irp1: { val: number(만원) }  ← IRP1 누적투자금 수동 입력값 (MyAssetDashBD에서 관리)
+    irp2: { val: number(만원) }  ← IRP2 누적투자금 수동 입력값
   todos: [...]
   goal: { name, target, finName, finTarget }
 ```
@@ -31,7 +40,19 @@ asset-data/
 ### 현재 Pension-tracer 한계
 - localStorage에만 월별 실적 저장 (브라우저 종속)
 - ISA 잔액 자동 연동 없음 (수동 입력만)
-- RIA 잔액 = `kiwoom-obil` 로 잘못 맵핑됨 → **OBil과 RIA는 완전히 별개 계좌**, 분리 필요
+- **[버그 확인됨]** RIA 필드에 `kiwoom-obil`(OBil) 잔액이 표시됨 → "RIA / OBil (키움)"으로 라벨까지 혼용
+  - OBil과 RIA는 완전히 별개 계좌, 혼용 불가
+  - RIA 계좌는 **아직 개설 전** (예정일: 2026-03-30)
+  - 따라서 현재 UI에 표시되는 RIA 잔액(약 2,914만원)은 실제로는 OBil 잔액임 — 무시할 것
+  - 수정 방향: OBil은 Pension-tracer에서 완전 제외, RIA는 개설 후 `state.ria` 키로 별도 연동
+- **[설계 확인 완료]** IRP1 납입 자동 계산 가능성 검토 결과
+  - 연금저축: 💰 삼성증권종합잔고거래내역 JSON → `applyTransferData(idx=3)` → `invest[3]` 누적 자동 계산 ✅
+  - IRP1: **`invest[7]`에 인덱스 존재하나, applyTransferData가 idx=3(연금저축)만 처리** → JSON 자동화 미적용
+  - IRP1 납입은 현재 MyAssetDashBD에서 `state['irp1'].val` 수동 입력으로 관리 중
+  - **결론: Pension-tracer에서 IRP1 월납입 자동 계산 불가 (원천 데이터가 수동 입력)**
+  - 단, `kiwoom.combined[].invest[7]` 월간 델타로 IRP1 납입을 자동 계산하려면
+    MyAssetDashBD의 `applyTransferData`가 IRP1도 처리하도록 확장 필요 (Phase 1 추가 작업)
+  - **현재는 IRP 납입 입력 모달 유지 (수동 입력 불가피)**
 - PLAN_DATA 하드코딩 없음 (계획 vs 실적 비교 기능 없음)
 - 납입 이력 Firebase 미연동 (입력 후 사라짐)
 - UI 단순 입력폼 수준 → 완전 재구축 필요
@@ -44,8 +65,8 @@ asset-data/
 | **IRP1** | 운용 중 | 월 25만원 (연 300만원) | IRP 합산 세액공제 한도 900만원 |
 | **IRP2** | 유지 중 (납입 없음) | 없음 | 퇴직 시 퇴직연금 이체 목적, 현재는 잔액만 트래킹 |
 | **ISA** | 미시작 (누적 납입 0원) | 월 25만원 (VOO 매도 자금) | 일반형, 연간 한도 2,000만원, VOO 매도 재원으로 납입 예정 |
-| **RIA** | 가입 예정 (2026-03-30) | - | 1년 의무 유지 → 만기 2027-03-30, 만기 후 ISA 이체 |
-| **OBil** | 운용 중 | - | 연금 무관 계좌, MyAssetDashBD에서 별도 관리, Pension-tracer 미포함 |
+| **RIA** | **개설 전** (예정일: 2026-03-30) | - | 1년 의무 유지 → 만기 2027-03-30, 만기 후 ISA 이체. 개설 전까지 잔액 0원, Pension-tracer에 RIA 행 표시하되 빈값 |
+| **OBil** | 운용 중 | - | **연금 무관 계좌**, `kiwoom-obil` 키. MyAssetDashBD에서 별도 관리. **Pension-tracer에 절대 포함하지 않음** (RIA와 혼동 금지) |
 | **VOO** | 운용 중 | - | 연간 양도차익 250만원 한도 내에서만 매도 (세금 없는 범위 고수) |
 
 ### 용어 정의
@@ -55,8 +76,8 @@ asset-data/
 | **잔액 = 평가금액** | 현재 계좌 가치 (원금 + 미실현 수익) | 동일 개념, 혼용 가능 |
 | **납입액** | 해당 월에 실제로 납입한 금액 | 원금만, 수익 미포함 |
 | **누적투자금** | 지금까지 납입한 원금 합계 | `invest[]` 기준 |
-| **OBil** | 키움 OBil 계좌 (`kiwoom-obil`) | 연금 무관, Pension-tracer에서 제외 |
-| **RIA** | RIA 별도 계좌 (`ria`) | 개설 예정 2026-03-30, 1년 의무 유지, 만기 2027-03-30 |
+| **OBil** | 키움 OBil 계좌 (`kiwoom-obil`) | **연금 무관, Pension-tracer 완전 제외**. RIA와 동일 증권사(키움)지만 전혀 다른 계좌임 |
+| **RIA** | RIA 별도 계좌 (`state.ria`) | **현재 개설 전** (예정일 2026-03-30). 개설 전 잔액 없음. `kiwoom-obil`과 무관 |
 | **ISA 연간 한도** | ISA 연간 납입 한도 2,000만원, 일반형 (1/1~12/31) | RIA 이체 시 잔여 한도 계산 필요 |
 | **ISA 월납입** | VOO 매도 자금으로 매월 25만원 납입 (미시작) | RIA 이체 시점에 연말까지 홀딩 가능 |
 | **양도차익 (gain)** | VOO 매도 시 발생한 수익 (매도가 - 취득가) | 연간 250만원까지 기본공제 |
@@ -311,8 +332,13 @@ loadFromFirebase()
 
 ## 7. 결정 필요 사항 (구현 전 확인)
 
-- [ ] **ISA 계좌명**: MyAssetDashBD에서 어떤 이름으로 표시? (예: `ISA (삼성증권)`)
-- [ ] **RIA 계좌명**: `RIA (키움)` vs `RIA/OBil` — OBil과 완전히 별개로 볼 것인가? //완전히 별개의 계좌임
-- [ ] **PLAN_DATA 초기값**: 첫 실행 시 계획 데이터가 없으면 기본값 제공할 것인가? //기본 계획값 제공
-- [ ] **연금저축 납입 자동 계산**: `kiwoom.combined`에 이체내역이 없는 월은 0으로 처리?
-- [ ] **Firebase 쓰기 권한**: 현재 Firebase Rules가 `asset-data/pension-tracker/**` PATCH 허용하는가?
+- [x] **ISA 계좌명**: `ISA(삼성증권)` — MyAssetDashBD PLAN.md 계좌 구성 표 기준으로 확정
+- [x] **RIA 계좌명**: `RIA (키움)` — OBil과 완전히 별개 계좌. "RIA / OBil" 혼용 표기 금지. RIA 개설 전(~2026-03-29)에는 잔액 0 / 빈값으로 표시
+- [x] **PLAN_DATA 초기값**: 기본값 제공 (DEFAULT_PLAN 구현 완료)
+- [x] **연금저축 납입 자동 계산**: 이체내역 없는 월은 0으로 처리 (구현 완료)
+- [x] **Firebase 쓰기 권한**: MyAssetDashBD가 `asset-data/` 전체에 `.write: true` → 하위 경로 PATCH 자동 허용 확인 완료
+- [x] **[확인 완료] IRP1 납입 자동 계산 가능 여부**:
+  - invest[7] = IRP1, invest[8] = IRP2 (MyAssetDashBD/js/export.js AI_NAMES 배열 확인)
+  - 연금저축(invest[3])만 Samsung Securities JSON으로 자동 계산, IRP는 state['irp1'].val 수동 입력
+  - **결론: 현재 구조에서 IRP 납입은 수동 입력 필요 → IRP 납입 입력 모달 유지**
+  - 향후 MyAssetDashBD applyTransferData를 IRP까지 확장하면 자동화 가능 (별도 작업)
