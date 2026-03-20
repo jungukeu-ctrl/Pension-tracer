@@ -180,6 +180,7 @@ Pension-tracer/
 | IRP1 납입 자동 계산 (invest[7] 델타, 수동 입력 fallback) | ✅ |
 | IRP 납입 입력 모달 (pension-tracker/contributions/irp PATCH) | ✅ |
 | ISA 납입 입력 모달 (pension-tracker/contributions/isa PATCH) | ✅ |
+| ISA 납입 자동 계산 (kiwoom invest[9] 델타, 수동 입력 fallback) | ✅ |
 | VOO 매도 입력 모달 (pension-tracker/voo PATCH) | ✅ |
 | 월 저장 버튼 (pension-tracker/records/{YYYY-MM} PATCH) | ✅ |
 | 분석 차트 4종 (Chart.js): 연금자산 추이 / 납입 달성률 / 원금 vs 평가 / VOO 현황 | ✅ |
@@ -194,17 +195,17 @@ Pension-tracer/
 
 | 브랜치 | 상태 | 비고 |
 |--------|------|------|
-| `claude/auto-sync-pension-data-iqIFx` | ✅ GitHub push 완료 | 8개 커밋 포함 |
-| `main` ← `claude/auto-sync-pension-data-iqIFx` | ⏳ PR 머지 대기 | GitHub 웹에서 머지 필요 |
+| `claude/auto-sync-pension-data-iqIFx` | ✅ 머지 완료 | PR #5 (2026-03-19) |
+| `claude/fix-transaction-sync-m8PrB` | ✅ 현재 개발 브랜치 | PLAN.md 업데이트 (2026-03-20) |
+| `main` ← `claude/fix-transaction-sync-m8PrB` | ⏳ PR 머지 대기 | GitHub 웹에서 머지 필요 |
 
 ### MyAssetDashBD
 
 | 브랜치 | 상태 | 비고 |
 |--------|------|------|
-| `claude/auto-sync-pension-data-iqIFx` | ✅ GitHub push 완료 (2026-03-19) | |
-| `main` ← `claude/auto-sync-pension-data-iqIFx` | ⏳ PR 머지 대기 | GitHub 웹에서 머지 필요 |
-
-**MyAssetDashBD PR 링크**: https://github.com/jungukeu-ctrl/MyAssetDashBD/pull/new/claude/auto-sync-pension-data-iqIFx
+| `claude/auto-sync-pension-data-iqIFx` | ✅ 머지 완료 (2026-03-19) | PR #12 |
+| `claude/fix-transaction-sync-m8PrB` | ✅ GitHub push 완료 (2026-03-20) | IRP1 인식 + ISA 동기화 버그픽스 + 차트 추가 |
+| `main` ← `claude/fix-transaction-sync-m8PrB` | ⏳ PR 머지 대기 | GitHub 웹에서 머지 필요 |
 
 ---
 

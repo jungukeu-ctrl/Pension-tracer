@@ -147,6 +147,11 @@ const Renderer = (() => {
     return _calcInvestDelta(kiwoom, month, 7);
   }
 
+  // ── ISA 납입 자동 계산 (kiwoom.combined invest[9] 델타) ─────
+  function _calcIsaContrib(kiwoom, month) {
+    return _calcInvestDelta(kiwoom, month, 9);
+  }
+
   function _calcInvestDelta(kiwoom, month, investIdx) {
     if (!kiwoom?.combined?.length) return 0;
     const sorted = [...kiwoom.combined]
@@ -182,7 +187,8 @@ const Renderer = (() => {
     // IRP1: invest[7] 델타 자동 계산 우선, 없으면 수동 입력 fallback
     const irpAuto = _calcIrp1Contrib(AppState.raw?.kiwoom, month);
     const irpVal  = irpAuto > 0 ? irpAuto : (AppState.contributions.irp[month] ?? 0);
-    const isaVal  = AppState.contributions.isa[month] ?? 0;
+    const isaAuto = _calcIsaContrib(AppState.raw?.kiwoom, month);
+    const isaVal  = isaAuto > 0 ? isaAuto : (AppState.contributions.isa[month] ?? 0);
 
     const irpEl = document.getElementById('disp-c-irp');
     const isaEl = document.getElementById('disp-c-isa');
@@ -278,7 +284,7 @@ const Renderer = (() => {
       ria:        v('f_ria'),
       c_pension:  v('calc-c-pension'),
       c_irp:      (() => { const a = _calcIrp1Contrib(AppState.raw?.kiwoom, month); return a > 0 ? a : (AppState.contributions.irp[month] || 0); })(),
-      c_isa:      AppState.contributions.isa[month] || 0,
+      c_isa:      (() => { const a = _calcIsaContrib(AppState.raw?.kiwoom, month); return a > 0 ? a : (AppState.contributions.isa[month] || 0); })(),
       tax_refund: v('f_tax'),
       voo_sold:   voo.sold,
       voo_gain:   voo.gain,
