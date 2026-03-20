@@ -194,17 +194,17 @@ Pension-tracer/
 
 | 브랜치 | 상태 | 비고 |
 |--------|------|------|
-| `claude/auto-sync-pension-data-iqIFx` | ✅ GitHub push 완료 | 8개 커밋 포함 |
-| `main` ← `claude/auto-sync-pension-data-iqIFx` | ⏳ PR 머지 대기 | GitHub 웹에서 머지 필요 |
+| `claude/auto-sync-pension-data-iqIFx` | ✅ 머지 완료 | PR #5 (2026-03-19) |
+| `claude/fix-transaction-sync-m8PrB` | ✅ 현재 개발 브랜치 | PLAN.md 업데이트 (2026-03-20) |
+| `main` ← `claude/fix-transaction-sync-m8PrB` | ⏳ PR 머지 대기 | GitHub 웹에서 머지 필요 |
 
 ### MyAssetDashBD
 
 | 브랜치 | 상태 | 비고 |
 |--------|------|------|
-| `claude/auto-sync-pension-data-iqIFx` | ✅ GitHub push 완료 (2026-03-19) | |
-| `main` ← `claude/auto-sync-pension-data-iqIFx` | ⏳ PR 머지 대기 | GitHub 웹에서 머지 필요 |
-
-**MyAssetDashBD PR 링크**: https://github.com/jungukeu-ctrl/MyAssetDashBD/pull/new/claude/auto-sync-pension-data-iqIFx
+| `claude/auto-sync-pension-data-iqIFx` | ✅ 머지 완료 (2026-03-19) | PR #12 |
+| `claude/fix-transaction-sync-m8PrB` | ✅ GitHub push 완료 (2026-03-20) | IRP1 인식 + ISA 동기화 버그픽스 + 차트 추가 |
+| `main` ← `claude/fix-transaction-sync-m8PrB` | ⏳ PR 머지 대기 | GitHub 웹에서 머지 필요 |
 
 ---
 
