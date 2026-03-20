@@ -110,6 +110,13 @@ const Renderer = (() => {
       }
     });
 
+    // ISA 잔액: state.isa.val은 투자금(원금) — eval[9](평가금액) 우선 표시
+    const isaInput = document.getElementById('f_isa');
+    if (isaInput && kiwoom?.combined?.length) {
+      const latestEntry = kiwoom.combined[kiwoom.combined.length - 1];
+      if ((latestEntry?.eval?.[9] ?? 0) > 0) isaInput.value = latestEntry.eval[9];
+    }
+
     // 연금저축 납입 자동 계산 (kiwoom.combined 델타)
     const cPension = _calcPensionContrib(kiwoom, month);
     const cPensionEl = document.getElementById('disp-c-pension');
@@ -147,9 +154,18 @@ const Renderer = (() => {
     return _calcInvestDelta(kiwoom, month, 7);
   }
 
-  // ── ISA 납입 자동 계산 (kiwoom.combined invest[9] 델타) ─────
+  // ── ISA 납입 자동 계산 ────────────────────────────────────
+  // 1순위: invest[9] 델타 (MyAssetDashBD ISA 모달 재적용 후)
+  // 2순위: state.isa.val - 이전 records c_isa 합산 (현재 데이터로 바로 계산)
   function _calcIsaContrib(kiwoom, month) {
-    return _calcInvestDelta(kiwoom, month, 9);
+    const delta = _calcInvestDelta(kiwoom, month, 9);
+    if (delta > 0) return delta;
+    const isaTotal = AppState.raw?.state?.isa?.val;
+    if (!isaTotal || isaTotal <= 0) return 0;
+    const prevSum = Object.entries(AppState.records)
+      .filter(([m]) => m < month)
+      .reduce((s, [, rec]) => s + Number(rec.c_isa || 0), 0);
+    return Math.max(0, isaTotal - prevSum);
   }
 
   function _calcInvestDelta(kiwoom, month, investIdx) {
