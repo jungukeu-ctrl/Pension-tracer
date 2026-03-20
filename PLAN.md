@@ -180,6 +180,7 @@ Pension-tracer/
 | IRP1 납입 자동 계산 (invest[7] 델타, 수동 입력 fallback) | ✅ |
 | IRP 납입 입력 모달 (pension-tracker/contributions/irp PATCH) | ✅ |
 | ISA 납입 입력 모달 (pension-tracker/contributions/isa PATCH) | ✅ |
+| ISA 납입 자동 계산 (kiwoom invest[9] 델타, 수동 입력 fallback) | ✅ |
 | VOO 매도 입력 모달 (pension-tracker/voo PATCH) | ✅ |
 | 월 저장 버튼 (pension-tracker/records/{YYYY-MM} PATCH) | ✅ |
 | 분석 차트 4종 (Chart.js): 연금자산 추이 / 납입 달성률 / 원금 vs 평가 / VOO 현황 | ✅ |
