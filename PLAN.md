@@ -217,3 +217,4 @@ Pension-tracer/
 - [x] **연금저축 납입 자동 계산**: 이체내역 없는 월은 0으로 처리
 - [x] **Firebase 쓰기 권한**: `asset-data/` 상위 `.write: true` → pension-tracker/** PATCH 자동 허용 확인
 - [x] **IRP1 납입 자동 계산**: invest[7]/[8] 델타 방식으로 MyAssetDashBD에서 구현 완료
+- [x] **MyAssetDashBD Firebase 저장 방식 PUT→PATCH 수정 (2026-03-23)**: MyAssetDashBD가 `asset-data.json`에 PUT으로 저장할 때 `pension-tracker` 키를 포함하지 않아 데이터가 삭제되던 버그 수정 완료. PATCH로 변경해 `pension-tracker` 경로 보존. Pension-tracer 읽기 경로(`fetchAll` → `asset-data.json`)는 그대로 유지.
