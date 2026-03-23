@@ -608,15 +608,19 @@ const Renderer = (() => {
     if (!d) { canvas.style.display = 'none'; noEl.style.display = 'block'; return; }
     canvas.style.display = 'block'; noEl.style.display = 'none';
 
-    // 누적 납입원금 (selM 이하)
-    let pInvest = 0, irpInvest = 0, isaInvest = 0;
-    Object.entries(recs).forEach(([m, rec]) => {
-      if (m <= selM) {
-        pInvest   += Number(rec.c_pension || 0);
-        irpInvest += Number(rec.c_irp     || 0);
-        isaInvest += Number(rec.c_isa     || 0);
-      }
-    });
+    // 누적 납입원금: kiwoom.combined에서 selM 이하 가장 최근 스냅샷의 invest 값 사용
+    // (월별 c_pension 델타 합산은 미저장 달이 누락되어 부정확)
+    const _kiInvest = (investIdx) => {
+      const kiwoom = AppState.raw?.kiwoom;
+      if (!kiwoom?.combined?.length) return 0;
+      const entry = [...kiwoom.combined]
+        .filter(e => e.month && e.month <= selM)
+        .sort((a, b) => b.month.localeCompare(a.month))[0];
+      return Number(entry?.invest?.[investIdx] ?? 0);
+    };
+    const pInvest   = _kiInvest(3);
+    const irpInvest = _kiInvest(7);
+    const isaInvest = _kiInvest(9);
 
     const accounts = [
       { label: '연금저축', invest: pInvest,   bal: Number(d.pension  || 0), color: CC.pension },
