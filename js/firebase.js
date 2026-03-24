@@ -6,7 +6,7 @@
 //    - MyAssetDashBD의 state/kiwoom 데이터는 읽기 전용 (절대 쓰지 않음)
 //    - pension-tracker/** 경로만 PATCH 방식으로 쓰기
 //    - 전체 PUT 금지 (기존 데이터 보호)
-//    - 모든 요청에 ?auth=<idToken> 포함 (Firebase 보안 규칙 적용)
+//    - 모든 요청에 ?auth=<idToken> 포함
 // ============================================================
 
 // ─── Auth 상수 ───────────────────────────────────────────────────────────────
@@ -57,11 +57,9 @@ function _injectAuthUI_() {
     </div>`;
   document.body.insertBefore(overlay, document.body.firstChild);
 
-  // 로그아웃 버튼 — btn-sync 옆에 삽입
   const syncBtn = document.getElementById('btn-sync');
   if (syncBtn && syncBtn.parentNode) {
     const logoutBtn = document.createElement('button');
-    logoutBtn.title = '로그아웃';
     logoutBtn.textContent = '⎋ 로그아웃';
     logoutBtn.className = 'btn btn-secondary btn-sm';
     logoutBtn.onclick = doLogout;
@@ -91,7 +89,7 @@ async function _refreshIdToken_() {
   return d.id_token;
 }
 
-// ─── 유효 토큰 반환 (만료 시 자동 갱신) ─────────────────────────────────────
+// ─── 유효 토큰 반환 ─────────────────────────────────────────────────────────────
 async function _getValidToken_() {
   const token  = localStorage.getItem(_LS_TOKEN_);
   const expiry = Number(localStorage.getItem(_LS_EXPIRY_) || '0');
@@ -99,7 +97,7 @@ async function _getValidToken_() {
   return _refreshIdToken_();
 }
 
-// ─── 로그인 버튼 핸들러 (전역) ────────────────────────────────────────────────
+// ─── 로그인 핸들러 (전역) ────────────────────────────────────────────────
 async function doLogin() {
   const email = (document.getElementById('login-email') || {}).value || '';
   const pw    = (document.getElementById('login-pw')    || {}).value || '';
@@ -133,7 +131,7 @@ async function doLogin() {
   }
 }
 
-// ─── 로그아웃 (전역) ─────────────────────────────────────────────────────────
+// ─── 로그아웃 (전역) ───────────────────────────────────────────────────────
 function doLogout() {
   localStorage.removeItem(_LS_TOKEN_);
   localStorage.removeItem(_LS_REFRESH_);
@@ -141,68 +139,53 @@ function doLogout() {
   _showLoginOverlay_();
 }
 
-// ─── 오버레이 표시/숨김 ──────────────────────────────────────────────────────
-function _showLoginOverlay_() {
-  const el = document.getElementById('login-overlay');
-  if (el) el.style.display = 'flex';
-}
-function _hideLoginOverlay_() {
-  const el = document.getElementById('login-overlay');
-  if (el) el.style.display = 'none';
-}
-function _showLoginError_(msg) {
-  const el = document.getElementById('login-error');
-  if (el) { el.textContent = msg; el.style.display = 'block'; }
-}
+function _showLoginOverlay_() { const el = document.getElementById('login-overlay'); if (el) el.style.display = 'flex'; }
+function _hideLoginOverlay_() { const el = document.getElementById('login-overlay'); if (el) el.style.display = 'none'; }
+function _showLoginError_(msg) { const el = document.getElementById('login-error'); if (el) { el.textContent = msg; el.style.display = 'block'; } }
 
-// ─── 앱 초기화 진입점 ────────────────────────────────────────────────────────
-async function checkAndInitAuth_(callback) {
-  _onAuthReady_ = callback;
-  _injectAuthUI_();
-  try {
-    await _getValidToken_();  // 저장된 토큰이 유효하면 바로 통과
-    _hideLoginOverlay_();
-    callback();
-  } catch {
-    _showLoginOverlay_();     // 토큰 없음/만료 → 로그인 화면
-  }
-}
+// ─── 자동 Auth 게이트 ─────────────────────────────────────────────────────────────
+// firebase.js가 inline script보다 먼저 로드되므로
+// DOMContentLoaded 시 loadFromFirebase를 auth-aware 버전으로 래핑된다
+document.addEventListener('DOMContentLoaded', function _authGate_() {
+  _injectAuthUI_();  // 오버레이 주입 (최소시 visible)
+
+  // inline script의 loadFromFirebase를 auth-aware 버전으로 교체
+  const _orig_ = window.loadFromFirebase;
+  window.loadFromFirebase = async function _authWrapped_() {
+    try {
+      await _getValidToken_();
+      _hideLoginOverlay_();
+      return _orig_ && _orig_();
+    } catch {
+      _showLoginOverlay_();
+      _onAuthReady_ = function() {
+        _hideLoginOverlay_();
+        if (_orig_) _orig_();
+      };
+    }
+  };
+});
 
 // ============================================================
 //  Firebase Realtime Database 읽기/쓰기 서비스
 // ============================================================
 const FirebaseService = (() => {
 
-  // ── URL 관리 ──────────────────────────────────────────────
-  function getUrl() {
-    return localStorage.getItem(FIREBASE_URL_KEY) || FIREBASE_URL_DEFAULT;
-  }
+  function getUrl() { return localStorage.getItem(FIREBASE_URL_KEY) || FIREBASE_URL_DEFAULT; }
+  function setUrl(url) { localStorage.setItem(FIREBASE_URL_KEY, url.trim()); }
+  function clearUrl() { localStorage.removeItem(FIREBASE_URL_KEY); }
+  function _base() { return getUrl().replace(/\/$/, '') + '/asset-data'; }
 
-  function setUrl(url) {
-    localStorage.setItem(FIREBASE_URL_KEY, url.trim());
-  }
-
-  function clearUrl() {
-    localStorage.removeItem(FIREBASE_URL_KEY);
-  }
-
-  function _base() {
-    return getUrl().replace(/\/$/, '') + '/asset-data';
-  }
-
-  // ── 읽기: 전체 asset-data 스냅샷 ─────────────────────────
   async function fetchAll() {
     const token = await _getValidToken_();
     const res = await fetch(`${_base()}.json?auth=${encodeURIComponent(token)}`);
-    if (res.status === 401) { doLogout(); throw new Error('인증이 만료되었습니다. 다시 로그인해주세요.'); }
+    if (res.status === 401) { doLogout(); throw new Error('인증 만료. 다시 로그인해주세요.'); }
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const data = await res.json();
     if (!data) throw new Error('Firebase에 저장된 데이터가 없습니다');
     return data;
   }
 
-  // ── 쓰기: pension-tracker 하위 경로 PATCH ────────────────
-  // subPath: e.g. 'pension-tracker/records/2026-03'
   async function _patch(subPath, payload) {
     const token = await _getValidToken_();
     const url = `${_base()}/${subPath}.json?auth=${encodeURIComponent(token)}`;
@@ -211,47 +194,23 @@ const FirebaseService = (() => {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload),
     });
-    if (res.status === 401) { doLogout(); throw new Error('인증이 만료되었습니다. 다시 로그인해주세요.'); }
+    if (res.status === 401) { doLogout(); throw new Error('인증 만료. 다시 로그인해주세요.'); }
     if (!res.ok) throw new Error(`PATCH 실패 (HTTP ${res.status})`);
     return res.json();
   }
 
-  // ── 월별 실적 스냅샷 저장 ────────────────────────────────
   async function saveRecord(month, record) {
-    return _patch(`pension-tracker/records/${month}`, {
-      ...record,
-      savedAt: new Date().toISOString(),
-    });
+    return _patch(`pension-tracker/records/${month}`, { ...record, savedAt: new Date().toISOString() });
   }
-
-  // ── 납입 이력 저장 ────────────────────────────────────────
-  // type: 'irp' | 'isa'
   async function saveContribution(type, month, amount) {
-    return _patch(`pension-tracker/contributions/${type}`, {
-      [month]: Number(amount),
-    });
+    return _patch(`pension-tracker/contributions/${type}`, { [month]: Number(amount) });
   }
-
-  // ── VOO 연간 매도/양도차익 저장 ──────────────────────────
-  // data: { sold: number, gain: number }
   async function saveVoo(year, data) {
     return _patch('pension-tracker/voo', { [year]: data });
   }
-
-  // ── 계획 데이터 저장 ──────────────────────────────────────
-  // yearKey: e.g. '2026-01' / planData: DEFAULT_PLAN 형태
   async function savePlan(yearKey, planData) {
     return _patch('pension-tracker/plan', { [yearKey]: planData });
   }
 
-  return {
-    getUrl,
-    setUrl,
-    clearUrl,
-    fetchAll,
-    saveRecord,
-    saveContribution,
-    saveVoo,
-    savePlan,
-  };
+  return { getUrl, setUrl, clearUrl, fetchAll, saveRecord, saveContribution, saveVoo, savePlan };
 })();
