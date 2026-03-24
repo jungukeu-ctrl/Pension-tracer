@@ -117,7 +117,15 @@ const Renderer = (() => {
       if ((latestEntry?.eval?.[9] ?? 0) > 0) isaInput.value = latestEntry.eval[9];
     }
 
+    // RIA 잔액: state.ria.val은 수동 입력 — eval[10](kiwoom-analyzer 결과) 우선 표시
+    const riaInput = document.getElementById('f_ria');
+    if (riaInput && kiwoom?.combined?.length) {
+      const latestEntry = kiwoom.combined[kiwoom.combined.length - 1];
+      if ((latestEntry?.eval?.[10] ?? 0) > 0) riaInput.value = latestEntry.eval[10];
+    }
+    
     // 연금저축 납입 자동 계산 (kiwoom.combined 델타)
+    
     const cPension = _calcPensionContrib(kiwoom, month);
     const cPensionEl = document.getElementById('disp-c-pension');
     if (cPensionEl) cPensionEl.textContent = fmt(cPension);
