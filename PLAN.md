@@ -181,6 +181,8 @@ Pension-tracer/
 | IRP 납입 입력 모달 (pension-tracker/contributions/irp PATCH) | ✅ |
 | ISA 납입 입력 모달 (pension-tracker/contributions/isa PATCH) | ✅ |
 | ISA 납입 자동 계산 (kiwoom invest[9] 델타, 수동 입력 fallback) | ✅ |
+| ISA 잔액 자동 연동 (kiwoom eval[9] 우선 표시) | ✅ |
+| RIA 잔액 자동 연동 (kiwoom eval[10] 우선 표시) | ✅ |
 | VOO 매도 입력 모달 (pension-tracker/voo PATCH) | ✅ |
 | 월 저장 버튼 (pension-tracker/records/{YYYY-MM} PATCH) | ✅ |
 | 분석 차트 4종 (Chart.js): 연금자산 추이 / 납입 달성률 / 원금 vs 평가 / VOO 현황 | ✅ |
@@ -196,20 +198,18 @@ Pension-tracer/
 | 브랜치 | 상태 | 비고 |
 |--------|------|------|
 | `claude/auto-sync-pension-data-iqIFx` | ✅ 머지 완료 | PR #5 (2026-03-19) |
-| `claude/fix-transaction-sync-m8PrB` | ✅ GitHub push 완료 (2026-03-20) | PLAN.md 업데이트 |
-| `main` ← `claude/fix-transaction-sync-m8PrB` | ⏳ PR 머지 대기 | GitHub 웹에서 머지 필요 |
-| `claude/fix-firebase-data-reset-0VePA` | ✅ GitHub push 완료 (2026-03-23) | PLAN.md 브랜치 현황 업데이트 |
-| `main` ← `claude/fix-firebase-data-reset-0VePA` | ⏳ PR 머지 대기 | GitHub 웹에서 머지 필요 |
+| `claude/fix-transaction-sync-m8PrB` | ✅ 머지 완료 | IRP1/ISA 동기화 버그픽스 |
+| `claude/fix-firebase-data-reset-0VePA` | ✅ 머지 완료 | Firebase PUT→PATCH 버그픽스 |
+| `claude/add-kiwoom-ria-support-Rhc1C` | ✅ 머지 완료 (PR #11, 2026-03-24) | RIA eval[10] 잔액 자동 연동 |
 
 ### MyAssetDashBD
 
 | 브랜치 | 상태 | 비고 |
 |--------|------|------|
 | `claude/auto-sync-pension-data-iqIFx` | ✅ 머지 완료 (2026-03-19) | PR #12 |
-| `claude/fix-transaction-sync-m8PrB` | ✅ GitHub push 완료 (2026-03-20) | IRP1 인식 + ISA 동기화 버그픽스 + 차트 추가 |
-| `main` ← `claude/fix-transaction-sync-m8PrB` | ⏳ PR 머지 대기 | GitHub 웹에서 머지 필요 |
-| `claude/fix-firebase-data-reset-0VePA` | ✅ GitHub push 완료 (2026-03-23) | Firebase PUT→PATCH 버그픽스 (pension-tracker 데이터 보호) |
-| `main` ← `claude/fix-firebase-data-reset-0VePA` | ⏳ PR 머지 대기 | GitHub 웹에서 머지 필요 |
+| `claude/fix-transaction-sync-m8PrB` | ✅ 머지 완료 | IRP1 인식 + ISA 동기화 버그픽스 + 차트 추가 |
+| `claude/fix-firebase-data-reset-0VePA` | ✅ 머지 완료 | Firebase PUT→PATCH 버그픽스 |
+| `claude/add-kiwoom-ria-support-Rhc1C` | ✅ 머지 완료 (PR #28, 2026-03-24) | kiwoom-ria 스냅샷 지원 및 차트/합계 반영 |
 
 ---
 
@@ -222,3 +222,4 @@ Pension-tracer/
 - [x] **Firebase 쓰기 권한**: `asset-data/` 상위 `.write: true` → pension-tracker/** PATCH 자동 허용 확인
 - [x] **IRP1 납입 자동 계산**: invest[7]/[8] 델타 방식으로 MyAssetDashBD에서 구현 완료
 - [x] **MyAssetDashBD Firebase 저장 방식 PUT→PATCH 수정 (2026-03-23)**: MyAssetDashBD가 `asset-data.json`에 PUT으로 저장할 때 `pension-tracker` 키를 포함하지 않아 데이터가 삭제되던 버그 수정 완료. PATCH로 변경해 `pension-tracker` 경로 보존. Pension-tracer 읽기 경로(`fetchAll` → `asset-data.json`)는 그대로 유지.
+- [x] **RIA eval[10] 자동 연동 (2026-03-24)**: kiwoom-analyzer combined[].eval[10] 값을 Pension-tracer f_ria 필드에 자동 표시
