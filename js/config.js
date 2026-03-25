@@ -5,7 +5,7 @@
 
 // ── Firebase ─────────────────────────────────────────────────
 // Firebase 콘솔 → 프로젝트 설정 → 일반 → 웹 API 키 값을 입력
-const FIREBASE_API_KEY     = 'YOUR_FIREBASE_WEB_API_KEY';
+const FIREBASE_API_KEY     = 'AIzaSyDovmoYvhoeci4HNAcuAopU1f_kGzWj1eg';
 const FIREBASE_URL_KEY     = 'firebase_url';
 const FIREBASE_URL_DEFAULT = 'https://my-asset-dashboard-9e6f9-default-rtdb.asia-southeast1.firebasedatabase.app';
 
