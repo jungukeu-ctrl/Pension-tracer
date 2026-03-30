@@ -48,7 +48,11 @@ const Renderer = (() => {
 
     // pension-tracker 서브트리
     const pt = data['pension-tracker'] || {};
-    AppState.records       = pt.records       || {};
+    const _synth = _buildHistoricalRecords(data.kiwoom, pt.records || {});
+    AppState.records = { ..._synth, ...(pt.records || {}) };
+    const _synth = _buildHistoricalRecords(data.kiwoom, pt.records || {});
+    AppState.records = { ..._synth, ...(pt.records || {}) };
+
     AppState.contributions = {
       irp: (pt.contributions || {}).irp || {},
       isa: (pt.contributions || {}).isa || {},
