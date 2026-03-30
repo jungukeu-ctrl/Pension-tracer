@@ -50,8 +50,6 @@ const Renderer = (() => {
     const pt = data['pension-tracker'] || {};
     const _synth = _buildHistoricalRecords(data.kiwoom, pt.records || {});
     AppState.records = { ..._synth, ...(pt.records || {}) };
-    const _synth = _buildHistoricalRecords(data.kiwoom, pt.records || {});
-    AppState.records = { ..._synth, ...(pt.records || {}) };
 
     AppState.contributions = {
       irp: (pt.contributions || {}).irp || {},
