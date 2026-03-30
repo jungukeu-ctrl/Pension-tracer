@@ -191,6 +191,45 @@ const Renderer = (() => {
     const prev = idx > 0 ? Number(sorted[idx - 1]?.invest?.[investIdx] ?? 0) : 0;
     return Math.max(0, curr - prev);
   }
+  function _buildHistoricalRecords(kiwoom, existingRecords) {
+    if (!kiwoom?.combined?.length) return {};
+    const tossPensionHist = (kiwoom.tossHistory || {})['toss-pension'] || {};
+    const sorted = [...kiwoom.combined]
+      .filter(e => e.month)
+      .sort((a, b) => a.month.localeCompare(b.month));
+    const startIdx = sorted.findIndex(e => {
+      const ev = e.eval || [];
+      return (Number(ev[3] ?? 0) + Number(ev[7] ?? 0) + Number(ev[8] ?? 0)) > 0;
+    });
+    if (startIdx < 0) return {};
+    const relevant = sorted.slice(startIdx);
+    const result = {};
+    relevant.forEach((entry, i) => {
+      const month = entry.month;
+      if (existingRecords[month]) return;
+      const ev  = entry.eval   || [];
+      const iv  = entry.invest || [];
+      const piv = (i > 0 ? relevant[i - 1].invest : null) || [];
+      const delta = idx => Math.max(0, Number(iv[idx] ?? 0) - Number(piv[idx] ?? 0));
+      const pensionToss = entry._hasToss ? 0 : Number(tossPensionHist[month] ?? 0);
+      result[month] = {
+        pension:    Number(ev[3]  ?? 0) + pensionToss,
+        irp1:       Number(ev[7]  ?? 0),
+        irp2:       Number(ev[8]  ?? 0),
+        isa:        Number(ev[9]  ?? 0),
+        ria:        Number(ev[10] ?? 0),
+        overseas:   Number(ev[0]  ?? 0),
+        c_pension:  delta(3),
+        c_irp:      delta(7),
+        c_isa:      delta(9),
+        voo_sold:   0,
+        voo_gain:   0,
+        tax_refund: 0,
+        _synthetic: true,
+      };
+    });
+    return result;
+  }
 
   // ── 날짜 불일치 경고 ──────────────────────────────────────
   function _checkDateMismatch(state) {
@@ -357,8 +396,9 @@ const Renderer = (() => {
     }
     tbody.innerHTML = months.map(m => {
       const d = AppState.records[m];
-      return `<tr>
-        <td>${m}</td>
+      const syn = d._synthetic === true;
+      return `<tr${syn ? ' style="opacity:0.55"' : ''}>
+        <td>${m}${syn ? ' <span style="font-size:10px;color:#4a5568;font-style:italic">(추정)</span>' : ''}</td>
         <td>${fmt(d.pension)}</td>
         <td>${fmt(d.irp1)}</td>
         <td>${fmt(d.irp2)}</td>
