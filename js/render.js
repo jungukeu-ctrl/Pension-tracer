@@ -48,8 +48,20 @@ const Renderer = (() => {
 
     // pension-tracker 서브트리
     const pt = data['pension-tracker'] || {};
-    const _synth = _buildHistoricalRecords(data.kiwoom, pt.records || {});
-    AppState.records = { ..._synth, ...(pt.records || {}) };
+    const _synth = _buildHistoricalRecords(data.kiwoom, {});
+    const _realRecords = pt.records || {};
+    const _merged = { ..._synth };
+    Object.keys(_realRecords).forEach(m => {
+      const syn = _synth[m];
+      _merged[m] = {
+        ..._realRecords[m],
+        c_pension: _realRecords[m].c_pension || syn?.c_pension || 0,
+        c_irp:     _realRecords[m].c_irp     || syn?.c_irp     || 0,
+        c_isa:     _realRecords[m].c_isa     || syn?.c_isa      || 0,
+      };
+    });
+    AppState.records = _merged;
+
 
     AppState.contributions = {
       irp: (pt.contributions || {}).irp || {},
