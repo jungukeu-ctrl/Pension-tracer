@@ -590,17 +590,21 @@ const Renderer = (() => {
     canvas.style.display = 'block'; noEl.style.display = 'none';
 
     const plan = AppState.activePlan;
-    let pensionActual = 0, irpActual = 0;
+    let pensionActual = 0, irpActual = 0, isaActual = 0;
     Object.entries(recs).forEach(([m, d]) => {
       if (m.startsWith(year)) {
         pensionActual += Number(d.c_pension || 0);
         irpActual     += Number(d.c_irp     || 0);
+        isaActual     += Number(d.c_isa     || 0);
       }
     });
 
     // contributions 에서도 합산 (record 저장 전 modal 입력분 반영)
     Object.entries(AppState.contributions.irp).forEach(([m, v]) => {
       if (m.startsWith(year) && !recs[m]) irpActual += Number(v || 0);
+    });
+    Object.entries(AppState.contributions.isa).forEach(([m, v]) => {
+      if (m.startsWith(year) && !recs[m]) isaActual += Number(v || 0);
     });
 
     const now     = new Date();
@@ -609,9 +613,10 @@ const Renderer = (() => {
                   : now.getMonth() + 1;
     const pensionPlan = plan.pension_monthly * elapsed;
     const irpPlan     = plan.irp_monthly     * elapsed;
-    const annuals     = [plan.pension_annual, plan.irp1_annual];
-    const planPro     = [pensionPlan, irpPlan];
-    const actuals     = [pensionActual, irpActual];
+    const isaPlan     = plan.isa_monthly     * elapsed;
+    const annuals     = [plan.pension_annual, plan.irp1_annual, plan.isa_annual_limit];
+    const planPro     = [pensionPlan, irpPlan, isaPlan];
+    const actuals     = [pensionActual, irpActual, isaActual];
     const pcts        = actuals.map((a, i) => annuals[i] > 0 ? Math.round(a / annuals[i] * 100) : 0);
 
     const opts = {
@@ -638,11 +643,11 @@ const Renderer = (() => {
     AppState.charts.contribution = new Chart(canvas, {
       type: 'bar',
       data: {
-        labels: ['연금저축', 'IRP1'],
+        labels: ['연금저축', 'IRP1', 'ISA'],
         datasets: [
           { label: '연간 목표',   data: annuals, backgroundColor: '#1a2236', borderColor: CC.plan, borderWidth: 1, borderRadius: 4 },
           { label: '현시점 계획', data: planPro, backgroundColor: CC.invest, borderRadius: 4 },
-          { label: '실적',        data: actuals, backgroundColor: [CC.pension, CC.irp1], borderRadius: 4 },
+          { label: '실적',        data: actuals, backgroundColor: [CC.pension, CC.irp1, CC.isa], borderRadius: 4 },
         ],
       },
       options: opts,
