@@ -186,7 +186,8 @@ Pension-tracer/
 | VOO 매도 입력 모달 (pension-tracker/voo PATCH) | ✅ |
 | 월 저장 버튼 (pension-tracker/records/{YYYY-MM} PATCH) | ✅ |
 | 분석 차트 4종 (Chart.js): 연금자산 추이 / 납입 달성률 / 원금 vs 평가 / VOO 현황 | ✅ |
-| 납입 달성률 차트 ISA 막대 표시 버그 수정 (2026-04-02) | ✅ |
+| 납입 달성률 차트 ISA 막대 표시 버그 수정 (2026-04-05) | ✅ |
+| ISA 납입 달성률 state.isa.val fallback 추가 (invest[9] 미저장 시) (2026-04-05) | ✅ |
 | OBil과 RIA 완전 분리 (RIA 개설 전 빈값 표시) | ✅ |
 | PLAN.md 미결 사항 전체 확정 (ISA 계좌명, Firebase Rules) | ✅ |
 
