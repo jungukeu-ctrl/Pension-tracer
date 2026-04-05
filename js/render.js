@@ -606,6 +606,11 @@ const Renderer = (() => {
     Object.entries(AppState.contributions.isa).forEach(([m, v]) => {
       if (m.startsWith(year) && !recs[m]) isaActual += Number(v || 0);
     });
+    // invest[9] 미구현 fallback: state.isa.val 기반 _calcIsaContrib 사용
+    if (isaActual === 0) {
+      const latestYearMonth = months.filter(m => m.startsWith(year)).sort().pop();
+      if (latestYearMonth) isaActual = _calcIsaContrib(AppState.raw?.kiwoom, latestYearMonth);
+    }
 
     const now     = new Date();
     const elapsed = parseInt(year) < now.getFullYear() ? 12
