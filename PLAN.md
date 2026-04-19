@@ -203,6 +203,7 @@ Pension-tracer/
 | `claude/fix-transaction-sync-m8PrB` | ✅ 머지 완료 | IRP1/ISA 동기화 버그픽스 |
 | `claude/fix-firebase-data-reset-0VePA` | ✅ 머지 완료 | Firebase PUT→PATCH 버그픽스 |
 | `claude/add-kiwoom-ria-support-Rhc1C` | ✅ 머지 완료 (PR #11, 2026-03-24) | RIA eval[10] 잔액 자동 연동 |
+| `claude/add-roadmap-location-indicator-KcxRa` | 🔄 진행 중 | 로드맵 현재 위치 인디케이터 |
 
 ### MyAssetDashBD
 

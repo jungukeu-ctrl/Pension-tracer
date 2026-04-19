@@ -68,6 +68,12 @@ td.dim{color:#334155}
 .tl-phase{font-size:13px;color:#cbd5e1;font-weight:500;margin-left:12px}
 .tl-arrow{color:#334155;font-size:16px;transition:transform .2s;display:inline-block}
 .tl-body{padding:4px 14px 14px}
+/* CURRENT LOCATION */
+.now-badge{display:inline-flex;align-items:center;gap:4px;background:rgba(251,191,36,.15);border:1px solid rgba(251,191,36,.45);border-radius:20px;padding:2px 9px;font-size:10px;font-weight:700;color:#fbbf24;margin-left:10px;animation:now-pulse 2s ease-in-out infinite}
+@keyframes now-pulse{0%,100%{opacity:1;box-shadow:0 0 0 0 rgba(251,191,36,.35)}50%{opacity:.9;box-shadow:0 0 0 6px rgba(251,191,36,0)}}
+.now-period-wrap .period-tag{border-color:#fbbf2466!important;color:#fbbf24!important;background:rgba(251,191,36,.12)!important}
+.now-dot{display:inline-block;width:7px;height:7px;border-radius:50%;background:#fbbf24;margin-right:4px;vertical-align:middle;animation:dot-blink 1.4s ease-in-out infinite}
+@keyframes dot-blink{0%,100%{opacity:1}50%{opacity:.2}}
 
 /* PERIOD */
 .period-wrap{margin-top:12px}
@@ -343,6 +349,39 @@ const TIMELINE = [
   ]},
 ];
 
+// ── 현재 위치 ───────────────────────────────────────────────────────────────
+const TODAY = new Date('2026-04-19');
+const TODAY_YEAR = TODAY.getFullYear();
+const TODAY_MONTH = TODAY.getMonth() + 1;
+const TODAY_DAY = TODAY.getDate();
+
+function parsePeriodRange(p) {
+  let m;
+  if ((m = p.match(/^(\d+)월\s*(\d+)일/))) return {s:[+m[1],+m[2]], e:[+m[1],+m[2]]};
+  if ((m = p.match(/^(\d+)~(\d+)월/)))     return {s:[+m[1],1],    e:[+m[2],31]};
+  if ((m = p.match(/^(\d+)월~/)))           return {s:[+m[1],1],    e:[12,31]};
+  if ((m = p.match(/^(\d+)월 이전/)))       return {s:[1,1],        e:[+m[1]-1,31]};
+  if ((m = p.match(/^(\d+)월/)))            return {s:[+m[1],1],    e:[+m[1],31]};
+  if (p.includes('상반기'))                  return {s:[1,1],        e:[6,30]};
+  return {s:[1,1], e:[12,31]};
+}
+
+function isCurrentYear(yearStr) {
+  const m = yearStr.match(/^(\d{4})/);
+  if (!m) return false;
+  const y1 = +m[1];
+  const m2 = yearStr.match(/[–\-](\d{4})/);
+  const y2 = m2 ? +m2[1] : y1;
+  return TODAY_YEAR >= y1 && TODAY_YEAR <= y2;
+}
+
+function isCurrentPeriod(yearStr, periodStr) {
+  if (!isCurrentYear(yearStr)) return false;
+  const r = parsePeriodRange(periodStr);
+  const t = TODAY_MONTH * 100 + TODAY_DAY;
+  return t >= r.s[0] * 100 + r.s[1] && t <= r.e[0] * 100 + r.e[1];
+}
+
 // ── 상태 ────────────────────────────────────────────────────────────────────
 let activeChain = null;
 const openYears = {};
@@ -389,11 +428,13 @@ function renderTimeline(){
     const c = yd.c;
     const isOpen = openYears[yi];
     const nextC = yi < TIMELINE.length-1 ? TIMELINE[yi+1].c : c;
+    const isNowYear = isCurrentYear(yd.year);
 
     const periodsHtml = isOpen ? yd.periods.map(pd => {
       const ptag_bg = pd.hi ? hex(c,0.2) : 'rgba(255,255,255,0.05)';
       const ptag_c  = pd.hi ? c : '#64748b';
       const ptag_bc = pd.hi ? c+'55' : '#1e3a5f';
+      const isNowPeriod = isCurrentPeriod(yd.year, pd.period);
 
       const eventsHtml = pd.events.map(ev => {
         const ch = CHAINS[ev.chain];
@@ -429,9 +470,9 @@ function renderTimeline(){
       }).join('');
 
       return `
-        <div class="period-wrap">
+        <div class="period-wrap${isNowPeriod ? ' now-period-wrap' : ''}">
           <div class="period-label-row">
-            <span class="period-tag" style="background:${ptag_bg};color:${ptag_c};border-color:${ptag_bc}">${pd.period}</span>
+            <span class="period-tag" style="background:${ptag_bg};color:${ptag_c};border-color:${ptag_bc}">${isNowPeriod ? '<span class="now-dot"></span>' : ''}${pd.period}</span>
             <span class="period-desc">${pd.label}</span>
           </div>
           ${eventsHtml}
@@ -439,16 +480,17 @@ function renderTimeline(){
     }).join('') : '';
 
     return `
-      <div class="tl-wrap">
+      <div class="tl-wrap"${isNowYear ? ' id="current-location"' : ''}>
         <div class="tl-spine">
           <div class="tl-dot" style="background:${c};box-shadow:0 0 12px ${c}88"></div>
           ${yi < TIMELINE.length-1 ? `<div class="tl-line" style="background:linear-gradient(to bottom,${c}55,${nextC}33)"></div>` : ''}
         </div>
         <div class="tl-card" style="border:1px solid ${c}33;border-left:3px solid ${c}">
           <div class="tl-header" style="background:linear-gradient(90deg,${hex(c,0.09)},transparent)" onclick="toggleYear(${yi})">
-            <div style="display:flex;align-items:center">
+            <div style="display:flex;align-items:center;flex-wrap:wrap;gap:4px">
               <span class="tl-year" style="color:${c}">${yd.year}</span>
               <span class="tl-phase">${yd.phase}</span>
+              ${isNowYear ? '<span class="now-badge">📍 현재 위치</span>' : ''}
             </div>
             <span class="tl-arrow" style="transform:${isOpen?'rotate(90deg)':'rotate(0deg)'}">›</span>
           </div>
@@ -500,6 +542,10 @@ function togglePanel(id){
 // ── 초기 렌더 ───────────────────────────────────────────────────────────────
 renderFlow();
 renderTimeline();
+setTimeout(() => {
+  const el = document.getElementById('current-location');
+  if (el) el.scrollIntoView({behavior:'smooth', block:'start'});
+}, 200);
 </script>
 </body>
 </html>
