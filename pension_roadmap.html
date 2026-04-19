@@ -1,0 +1,691 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>은퇴 연금 전략 로드맵 2026–2040</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.2/babel.min.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { background: #080f1a; }
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: #0d1b2a; }
+    ::-webkit-scrollbar-thumb { background: #1e3a5f; border-radius: 3px; }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+  <script type="text/babel">
+
+const CHAINS = {
+  RIA:  { id: "RIA",  label: "RIA 절세 체인",       color: "#f97316", icon: "🔥" },
+  VOO:  { id: "VOO",  label: "VOO→3계좌 자금 체인",  color: "#3b82f6", icon: "💧" },
+  ISA:  { id: "ISA",  label: "ISA→연금전환 체인",    color: "#a855f7", icon: "🔄" },
+  TAX:  { id: "TAX",  label: "절세 한도 체인",        color: "#10b981", icon: "💎" },
+  HLTH: { id: "HLTH", label: "건보료 피부양자 체인",  color: "#14b8a6", icon: "🏥" },
+};
+
+// ─── ISA 한도 시뮬레이션 데이터 ───────────────────────────────────────────────
+const ISA_TABLE = [
+  { year: "2026", avail: "2,000만", voo: "0", ria: "0",      total: "0",      carry: "+2,000만", note: "VOO 홀딩으로 ISA 납입 없음" },
+  { year: "2027", avail: "4,000만", voo: "930만", ria: "3,070만", total: "4,000만", carry: "0",      note: "이월 2,000만 + 당해 2,000만 풀 활용" },
+  { year: "2028", avail: "2,000만", voo: "630만", ria: "1,370만", total: "2,000만", carry: "0",      note: "VOO ~12주 잔여분 포함" },
+  { year: "2029", avail: "2,000만", voo: "0",    ria: "512만",  total: "512만",  carry: "+1,488만", note: "VOO 소진(2028.9~10월), RIA 잔여 이체" },
+];
+
+const TIMELINE = [
+  {
+    year: "2026",
+    phase: "적립기 + RIA 절세 실행",
+    phaseColor: "#f97316",
+    periods: [
+      {
+        period: "01~03월",
+        label: "기존 방식 유지",
+        events: [
+          {
+            chain: "VOO",
+            what: "연금저축 50만/월 납입·매수 (삼성증권 TIGER S&P500)\nVOO 일반계좌 50만/월 매수",
+            why: "기존 해외투자 50만 + 연금저축 50만 = 월 100만 운용",
+            consequence: "3개월 누적: 연금저축 기매수 ~150만, VOO 기매수 ~150만\n→ RIA 차감비율에 이미 반영됨",
+          },
+        ],
+      },
+      {
+        period: "03월 24일",
+        label: "SPY RIA 계좌 대체입고",
+        highlight: true,
+        events: [
+          {
+            chain: "RIA",
+            what: "SPY 52주 RIA 계좌로 대체입고 (취득단가 $463.88)",
+            why: "일반위탁에서 RIA 계좌로 이동",
+            consequence: null,
+          },
+        ],
+      },
+      {
+        period: "03월 31일",
+        label: "RIA 실행 — 전략 핵심 ✅ 완료",
+        highlight: true,
+        events: [
+          {
+            chain: "RIA",
+            what: "SPY 51주 매도 @ $639.16 → $32,597\n환전 (환율 1,474.69) → 원화 입금\n환전정산 포함 RIA 실제 입금액: 4,952만원",
+            why: "RIA 혜택: 국내주식 매수액만큼 해외ETF 양도세 공제\n→ 절세 효과 약 250만원 (양도세 8만만 납부)",
+            consequence: "SPY 1주 잔여 보유 중 ⚠️ 처리 방향 미결정 (메모)",
+          },
+          {
+            chain: "RIA",
+            what: "RIA 자금 4,952만으로 국내ETF 포트폴리오 전환\n(RISE대형고배당 50% / PLUS고배당 20% / KODEX200가치저변동 30%)",
+            why: "RIA 혜택 = 국내주식 매수액이 클수록 공제율 상승",
+            consequence: null,
+          },
+        ],
+      },
+      {
+        period: "04월~",
+        label: "홀딩 구간 — 차감비율 최소화",
+        events: [
+          {
+            chain: "RIA",
+            what: "연금저축: 토스 모으기에 100만/월 적립 (납입·매수 중단)\nIRP1: 시작 안 함 (VOO 미매도)\nISA: 0원 (2026 전체 미납입 → 연말 이월한도 2,000만 확보)\nVOO: 홀딩",
+            why: "연금저축 TIGER S&P500 매수 시 차감비율 상승 → RIA 공제 감소\nVOO 매도 시 양도차익 발생 → 250만 기본공제 소진 → 절세 효과 감소",
+            consequence: null,
+          },
+        ],
+      },
+      {
+        period: "08월~",
+        label: "연금저축 재개",
+        events: [
+          {
+            chain: "RIA",
+            what: "토스 적립금 → 연금저축 일괄 납입·매수\n이후 월 100만씩 납입·매수 재개",
+            why: "8월 기준 RIA 차감비율 사실상 확정\n→ 더 이상 매수 미룰 이유 없음 (조건: 예상수익률 2.24% 이상)",
+            consequence: "2026년 연금저축 연간 납입 약 1,050만원 예상 (한도 1,500만 이내)",
+          },
+        ],
+      },
+      {
+        period: "12월",
+        label: "연말 정리",
+        events: [
+          {
+            chain: "RIA",
+            what: "양도소득세 신고용 거래내역 저장\n(키움 RIA·일반, 삼성 연금저축 월별 매수내역)",
+            why: "2027년 5월 홈택스 확정신고 준비 (납부 약 8만원)",
+            consequence: "2026년 ISA 미납입 → 이월한도 2,000만 확보 ✅",
+          },
+        ],
+      },
+    ],
+  },
+
+  {
+    year: "2027",
+    phase: "VOO 매도 시작 → 3계좌 자금 공급 + RIA→ISA 1차",
+    phaseColor: "#3b82f6",
+    periods: [
+      {
+        period: "01월",
+        label: "VOO 매도 재개 — 자금 흐름 본격화",
+        highlight: true,
+        events: [
+          {
+            chain: "VOO",
+            what: "VOO 1주/3주 매도 시작 (연간 약 17주, 주당 약 90만원)",
+            why: "2027년 = 새로운 과세연도\n→ 2026년 RIA 절세 계산과 완전히 무관\n∴ VOO 매도해도 2026년 RIA 혜택에 영향 없음",
+            consequence: "연간 양도차익 약 226만원 → 250만 기본공제 이내 → 세금 0원",
+          },
+          {
+            chain: "VOO",
+            what: "VOO 매도 수령액 → 3계좌 분배",
+            why: null,
+            consequence: null,
+            sub: [
+              { acct: "연금저축", amount: "25만/월", reason: "기존 100만 + 25만 = 125만/월\n= 연 1,500만 한도 정확히 충족" },
+              { acct: "IRP1",    amount: "25만/월",  reason: "연 300만 납입\n= 세액공제 300만 확보" },
+              { acct: "ISA",     amount: "약 77만/월", reason: "나머지 전액\n= 연 약 930만원 비과세 적립" },
+            ],
+          },
+          {
+            chain: "TAX",
+            what: "세액공제 구조 완성\n연금저축 600만 + IRP1 300만 = 900만원 한도 100% 활용",
+            why: "IRP1 자금 원천 = VOO 매도금\n→ VOO 매도 시작 전엔 IRP1 납입 자금 없음\n∴ IRP1은 2027년 1월부터 시작",
+            consequence: "세액공제 환급 약 148만/년 (16.5% 기준)",
+          },
+        ],
+      },
+      {
+        period: "05월",
+        label: "세금 신고 + RIA→ISA 1차 이체",
+        events: [
+          {
+            chain: "RIA",
+            what: "2026년 양도소득세 확정신고 (홈택스, 납부 약 8만원)",
+            why: "SPY 매도분 + RIA 혜택 적용 최종 결과",
+            consequence: null,
+          },
+          {
+            chain: "ISA",
+            what: "RIA 국내ETF 매도 → ISA 1차 이체 3,070만원",
+            why: "ISA 가용한도: 2026 이월 2,000만 + 2027 한도 2,000만 = 4,000만\nVOO→ISA 930만 제외 후 RIA 이체 가능액 = 3,070만",
+            consequence: "RIA 잔여: 4,952만 - 3,070만 = 1,882만",
+          },
+        ],
+      },
+    ],
+  },
+
+  {
+    year: "2028",
+    phase: "RIA→ISA 2차 + 은퇴 준비",
+    phaseColor: "#f97316",
+    periods: [
+      {
+        period: "상반기",
+        label: "RIA→ISA 2차 이체",
+        events: [
+          {
+            chain: "ISA",
+            what: "RIA → ISA 2차 이체 1,370만원",
+            why: "2028 ISA 한도 2,000만 중\nVOO→ISA 630만(잔여 ~12주) 선점 후 남은 1,370만",
+            consequence: "RIA 잔여: 1,882만 - 1,370만 = 512만",
+          },
+        ],
+      },
+      {
+        period: "09~10월",
+        label: "VOO 소진",
+        events: [
+          {
+            chain: "VOO",
+            what: "VOO 전량 소진 (2027.01 매도 시작 기준 약 20~22개월)",
+            why: "보유 약 29주 × 3주 간격 = 약 87주 = 약 20개월",
+            consequence: "이후 연금저축 월납입 100만으로 감소 (VOO 25만 소멸)",
+          },
+        ],
+      },
+      {
+        period: "12월",
+        label: "은퇴 + 퇴직금 이체",
+        highlight: true,
+        events: [
+          {
+            chain: "TAX",
+            what: "은퇴 (만 54세) — 고용 종료",
+            why: "2028년 말 목표 은퇴",
+            consequence: "건강보험 자격 변동 즉시 확인 필요",
+          },
+          {
+            chain: "TAX",
+            what: "DB 퇴직금 → IRP2(하나증권) 일시 이체 약 1.4억원",
+            why: "퇴직금은 반드시 IRP 이전해야 퇴직소득세 이연 가능",
+            consequence: "⚠️ 금액 미확정 — 전략 전체 최대 변수. HR 확인 필수",
+          },
+        ],
+      },
+    ],
+  },
+
+  {
+    year: "2029",
+    phase: "연금 수령 개시 + RIA→ISA 마지막 이체",
+    phaseColor: "#eab308",
+    periods: [
+      {
+        period: "02월 이전",
+        label: "🚨 ISA 연장 신청 데드라인",
+        highlight: true,
+        events: [
+          {
+            chain: "ISA",
+            what: "삼성증권 방문 → ISA 연장 신청 (3년→4년, 만기 2030.03)",
+            why: "ISA 원래 만기 = 2029.03\n→ 만기 이후엔 연장 신청 불가\n→ 반드시 만기 전에 신청",
+            consequence: "만기 2030.03 확정 → 연금전환서비스 가능",
+          },
+        ],
+      },
+      {
+        period: "02월",
+        label: "연금 수령 개시",
+        events: [
+          {
+            chain: "HLTH",
+            what: "연금저축 + IRP1 연금 수령 시작 (만 55세)\n월 수령액: 연 1,500만 ÷ 12 = 월 125만원",
+            why: "사적연금 연 1,500만원 이하 유지\n→ 16.5% 분리과세 + 피부양자 자격 동시 보호",
+            consequence: "건보료 절감 연 약 200~300만원 시작",
+          },
+        ],
+      },
+      {
+        period: "상반기",
+        label: "RIA→ISA 마지막 이체",
+        events: [
+          {
+            chain: "ISA",
+            what: "RIA 잔여 512만원 → ISA 최종 이체",
+            why: "RIA→ISA 이체 완료 (총 4,952만원 전액 이전 완료)",
+            consequence: "RIA 잔여: 0원 ✅ (SPY 1주 별도 ⚠️ 처리 미결)",
+          },
+        ],
+      },
+      {
+        period: "03월",
+        label: "국민연금 납입 중지",
+        events: [
+          {
+            chain: "TAX",
+            what: "국민연금 임의가입 해지 신청",
+            why: "만 55세 은퇴 후 의무 납입 종료",
+            consequence: null,
+          },
+        ],
+      },
+    ],
+  },
+
+  {
+    year: "2030",
+    phase: "ISA 만기 → 연금전환서비스",
+    phaseColor: "#a855f7",
+    periods: [
+      {
+        period: "03월",
+        label: "ISA 만기 — 핵심 절세 이벤트",
+        highlight: true,
+        events: [
+          {
+            chain: "ISA",
+            what: "ISA 4년 만기 해지 (2026.03 개설 + 1년 연장)",
+            why: "2029.02 이전 연장 신청의 결과",
+            consequence: null,
+          },
+          {
+            chain: "ISA",
+            what: "ISA 전액 → 연금전환서비스 신청 (60일 이내 필수)",
+            why: "만기 후 60일 이내 연금저축 이전 시\n추가 세액공제 300만원 발생\n이 기회는 단 한 번",
+            consequence: "비과세 원금 약 1.8억 확보\n(ISA 이전분 약 7,537만 + 초과납입분 약 1.05억)",
+          },
+        ],
+      },
+    ],
+  },
+
+  {
+    year: "2031–2038",
+    phase: "피부양자 구간 — 건보료 최대 절감",
+    phaseColor: "#14b8a6",
+    periods: [
+      {
+        period: "8년간",
+        label: "피부양자 자격 유지",
+        highlight: true,
+        events: [
+          {
+            chain: "HLTH",
+            what: "사적연금 연 1,500만원 이내 수령 유지",
+            why: "배우자 직장가입자 피부양자 조건 = 연소득 2,000만 미만\n1,500만 < 2,000만 → 자격 유지 → 건보료 0원",
+            consequence: "8년간 건보료 절감 총액 약 1,600~2,400만원",
+          },
+          {
+            chain: "TAX",
+            what: "IRP2(퇴직금) 계속 운용 — 인출 최소화",
+            why: "인출 순서 마지막 = 운용 기간 길수록 복리 효과 극대화",
+            consequence: null,
+          },
+        ],
+      },
+    ],
+  },
+
+  {
+    year: "2039+",
+    phase: "국민연금 개시 → 지역가입자 전환",
+    phaseColor: "#ef4444",
+    periods: [
+      {
+        period: "개시 후",
+        label: "최종 인출 단계",
+        events: [
+          {
+            chain: "HLTH",
+            what: "국민연금 수령 개시 (월 약 180만, 연 약 2,160만원 추정)",
+            why: "만 65세 도달",
+            consequence: "피부양자 자격 상실 → 지역가입자 전환\n인출순서: ① 비과세원금 → ② 세액공제분/수익 → ③ 개인IRP → ④ 퇴직IRP(IRP2)",
+          },
+          {
+            chain: "TAX",
+            what: "IRP2(퇴직금) 인출 시작",
+            why: "10년 이상 연금수령 시 퇴직소득세 30~40% 감면 최대 활용",
+            consequence: null,
+          },
+        ],
+      },
+    ],
+  },
+];
+
+function ChainRow({ color, icon, title, steps, dim }) {
+  return (
+    <div style={{ marginBottom: 14, opacity: dim ? 0.15 : 1, transition: "opacity 0.2s" }}>
+      <div style={{ fontSize: 11, color, fontWeight: 700, marginBottom: 7 }}>{icon} {title}</div>
+      <div style={{ display: "flex", alignItems: "flex-start", flexWrap: "wrap", gap: 0 }}>
+        {steps.map((s, i) => (
+          <div key={i} style={{ display: "flex", alignItems: "center" }}>
+            <div style={{
+              background: s.highlight ? `${color}22` : "rgba(255,255,255,0.04)",
+              border: `1px solid ${s.highlight ? color + "66" : "#1e3a5f"}`,
+              borderRadius: 8, padding: "7px 11px", minWidth: 85, maxWidth: 145,
+            }}>
+              <div style={{
+                fontSize: 11, color: s.highlight ? color : (s.bold ? "#e2e8f0" : "#94a3b8"),
+                fontWeight: s.bold ? 700 : 400,
+                textAlign: "center", whiteSpace: "pre-line", lineHeight: 1.4,
+              }}>{s.text}</div>
+              {s.cause && <div style={{ fontSize: 9, color: "#3d4f66", textAlign: "center", marginTop: 3, lineHeight: 1.3 }}>{s.cause}</div>}
+            </div>
+            {i < steps.length - 1 && (
+              <div style={{ padding: "0 3px", color: `${color}66`, fontSize: 14, fontWeight: 700 }}>→</div>
+            )}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+export default function App() {
+  const [activeChain, setActiveChain] = useState(null);
+  const [openYears, setOpenYears] = useState({ 0:true,1:true,2:true,3:true,4:true,5:true,6:true });
+  const [showFlow, setShowFlow] = useState(true);
+  const [showISA, setShowISA] = useState(false);
+
+  const toggleYear = (i) => setOpenYears(p => ({ ...p, [i]: !p[i] }));
+
+  return (
+    <div style={{ fontFamily: "'Noto Sans KR','Apple SD Gothic Neo',sans-serif", background: "#080f1a", minHeight: "100vh", color: "#e2e8f0" }}>
+
+      {/* 헤더 */}
+      <div style={{
+        background: "linear-gradient(135deg,#0d1b2a,#1a2744)",
+        borderBottom: "1px solid #1e3a5f",
+        padding: "20px 22px 14px",
+        position: "sticky", top: 0, zIndex: 100,
+      }}>
+        <div style={{ fontSize: 10, color: "#60a5fa", letterSpacing: 4, marginBottom: 4, fontWeight: 700 }}>PENSION STRATEGY · CAUSAL ROADMAP</div>
+        <h1 style={{ margin: "0 0 10px", fontSize: 19, fontWeight: 800, letterSpacing: -0.5, color: "#f8fafc" }}>
+          은퇴 연금 전략 로드맵
+          <span style={{ color: "#475569", fontWeight: 400, fontSize: 13, marginLeft: 8 }}>2026 – 2040+</span>
+        </h1>
+        {/* 체인 필터 */}
+        <div style={{ display: "flex", gap: 5, flexWrap: "wrap", alignItems: "center" }}>
+          <span style={{ fontSize: 10, color: "#475569", marginRight: 2, letterSpacing: 1 }}>체인 필터:</span>
+          <button onClick={() => setActiveChain(null)} style={{
+            padding: "3px 11px", borderRadius: 20, border: "1px solid",
+            borderColor: !activeChain ? "#94a3b8" : "#1e3a5f",
+            background: !activeChain ? "rgba(148,163,184,0.15)" : "transparent",
+            color: !activeChain ? "#e2e8f0" : "#475569",
+            cursor: "pointer", fontSize: 11, fontWeight: 600,
+          }}>전체</button>
+          {Object.values(CHAINS).map(c => (
+            <button key={c.id} onClick={() => setActiveChain(activeChain === c.id ? null : c.id)} style={{
+              padding: "3px 11px", borderRadius: 20, border: "1px solid",
+              borderColor: activeChain === c.id ? c.color : `${c.color}44`,
+              background: activeChain === c.id ? `${c.color}22` : "transparent",
+              color: activeChain === c.id ? c.color : `${c.color}88`,
+              cursor: "pointer", fontSize: 11, fontWeight: 600,
+            }}>{c.icon} {c.label}</button>
+          ))}
+        </div>
+      </div>
+
+      <div style={{ padding: "16px 20px 60px", maxWidth: 860, margin: "0 auto" }}>
+
+        {/* 미결 메모 */}
+        <div style={{
+          marginBottom: 16, padding: "10px 14px",
+          background: "rgba(234,179,8,0.08)",
+          border: "1px solid rgba(234,179,8,0.3)",
+          borderLeft: "3px solid #eab308",
+          borderRadius: "0 10px 10px 0",
+        }}>
+          <div style={{ fontSize: 10, color: "#eab308", fontWeight: 700, letterSpacing: 1, marginBottom: 4 }}>📌 미결 메모</div>
+          <div style={{ fontSize: 12, color: "#94a3b8", lineHeight: 1.6 }}>
+            RIA 계좌에 <span style={{ color: "#fde68a", fontWeight: 600 }}>SPY 1주 잔여 보유 중</span> — 처리 방향 미결정
+            <span style={{ color: "#475569" }}> (매도 후 ISA 이체 또는 RIA 잔류 중 선택 필요, 금액 약 80~90만원 추정)</span>
+          </div>
+        </div>
+
+        {/* 인과관계 흐름도 */}
+        <div style={{ marginBottom: 16 }}>
+          <button onClick={() => setShowFlow(!showFlow)} style={{
+            background: "rgba(255,255,255,0.04)", border: "1px solid #1e3a5f",
+            color: "#94a3b8", padding: "5px 13px", borderRadius: 8,
+            cursor: "pointer", fontSize: 12, marginBottom: 10,
+          }}>{showFlow ? "▼" : "▶"} 핵심 인과관계 한눈에 보기</button>
+
+          {showFlow && (
+            <div style={{ background: "#0d1b2a", border: "1px solid #1e3a5f", borderRadius: 12, padding: "16px 18px" }}>
+              <div style={{ fontSize: 10, color: "#60a5fa", letterSpacing: 2, marginBottom: 14, fontWeight: 700 }}>WHY-BECAUSE 연결 구조</div>
+              <ChainRow color={CHAINS.RIA.color} icon={CHAINS.RIA.icon} title="RIA 절세 체인 (2026)"
+                dim={activeChain && activeChain !== "RIA"}
+                steps={[
+                  { text: "SPY 51주 매도\n(RIA계좌)\n실입금 4,952만", bold: true },
+                  { text: "VOO 홀딩\n연금저축 매수 중단", cause: "∵ 해외ETF 매수→차감비율↑→RIA공제↓" },
+                  { text: "절세\n~250만원", bold: true, highlight: true },
+                  { text: "2027년부터\nVOO 매도 가능", cause: "∵ 과세연도 분리" },
+                ]}
+              />
+              <ChainRow color={CHAINS.VOO.color} icon={CHAINS.VOO.icon} title="VOO → 3계좌 자금 체인 (2027~2028.9)"
+                dim={activeChain && activeChain !== "VOO"}
+                steps={[
+                  { text: "VOO 1주/3주\n매도(2027.01~)", bold: true },
+                  { text: "연금저축\n+25만→125만/월", cause: "→연 1,500만 한도" },
+                  { text: "IRP1\n25만/월", cause: "→세액공제 300만" },
+                  { text: "ISA\n~77만/월", cause: "→비과세 연 930만" },
+                  { text: "세액공제\n900만 풀 활용", bold: true, highlight: true },
+                ]}
+              />
+              <ChainRow color={CHAINS.ISA.color} icon={CHAINS.ISA.icon} title="RIA→ISA 이체 체인 (2027~2029) — 실제 수치 확정"
+                dim={activeChain && activeChain !== "ISA"}
+                steps={[
+                  { text: "2027\n3,070만", bold: true, cause: "이월2,000+당해2,000-VOO930" },
+                  { text: "2028\n1,370만", cause: "한도2,000-VOO630" },
+                  { text: "2029\n512만", cause: "RIA잔여 전액" },
+                  { text: "합계\n4,952만 ✅", bold: true, highlight: true },
+                  { text: "ISA 만기\n2030.03→연금전환", cause: "+세액공제 300만" },
+                ]}
+              />
+              <ChainRow color={CHAINS.HLTH.color} icon={CHAINS.HLTH.icon} title="건보료 피부양자 체인 (2029~2038)"
+                dim={activeChain && activeChain !== "HLTH"}
+                steps={[
+                  { text: "사적연금\n연 1,500만 이내", bold: true },
+                  { text: "연소득\n2,000만 미만", cause: "∵ 피부양자 조건" },
+                  { text: "건보료 0원\n(8년)", bold: true, highlight: true },
+                  { text: "총 절감\n~1,600~2,400만", cause: "≈연 200~300만×8년" },
+                ]}
+              />
+            </div>
+          )}
+        </div>
+
+        {/* ISA 한도 시뮬레이션 */}
+        <div style={{ marginBottom: 16 }}>
+          <button onClick={() => setShowISA(!showISA)} style={{
+            background: "rgba(255,255,255,0.04)", border: "1px solid #1e3a5f",
+            color: "#94a3b8", padding: "5px 13px", borderRadius: 8,
+            cursor: "pointer", fontSize: 12, marginBottom: 10,
+          }}>{showISA ? "▼" : "▶"} ISA 한도 × RIA 이체 시뮬레이션 (수정 확정판)</button>
+
+          {showISA && (
+            <div style={{ background: "#0d1b2a", border: "1px solid #1e3a5f", borderRadius: 12, padding: "16px 18px", overflowX: "auto" }}>
+              <div style={{ fontSize: 10, color: "#a855f7", letterSpacing: 2, marginBottom: 12, fontWeight: 700 }}>ISA 연도별 한도 배분 (실제 수치 반영)</div>
+              <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12 }}>
+                <thead>
+                  <tr>
+                    {["연도","ISA 가용한도","VOO→ISA","RIA 이체","합계","이월"].map((h,i) => (
+                      <th key={i} style={{ padding: "6px 10px", borderBottom: "1px solid #1e3a5f", color: "#64748b", textAlign: "right", fontWeight: 600, whiteSpace: "nowrap" }}>{h}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {ISA_TABLE.map((row, i) => (
+                    <tr key={i} style={{ borderBottom: "1px solid #0f1929" }}>
+                      <td style={{ padding: "8px 10px", color: "#a855f7", fontWeight: 700 }}>{row.year}</td>
+                      <td style={{ padding: "8px 10px", textAlign: "right", color: "#e2e8f0" }}>{row.avail}</td>
+                      <td style={{ padding: "8px 10px", textAlign: "right", color: "#60a5fa" }}>{row.voo === "0" ? <span style={{color:"#334155"}}>0</span> : row.voo}</td>
+                      <td style={{ padding: "8px 10px", textAlign: "right", color: "#c084fc", fontWeight: 600 }}>{row.ria === "0" ? <span style={{color:"#334155"}}>0</span> : row.ria}</td>
+                      <td style={{ padding: "8px 10px", textAlign: "right", color: "#e2e8f0" }}>{row.total}</td>
+                      <td style={{ padding: "8px 10px", textAlign: "right", color: row.carry.startsWith("+") ? "#86efac" : "#334155" }}>{row.carry}</td>
+                    </tr>
+                  ))}
+                  <tr style={{ borderTop: "2px solid #1e3a5f" }}>
+                    <td colSpan={3} style={{ padding: "8px 10px", color: "#64748b", fontSize: 11 }}>RIA 이체 합계</td>
+                    <td style={{ padding: "8px 10px", textAlign: "right", color: "#a855f7", fontWeight: 700 }}>4,952만 ✅</td>
+                    <td colSpan={2} style={{ padding: "8px 10px", color: "#475569", fontSize: 11 }}>SPY 1주 잔여분 별도 ⚠️</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+
+        {/* 타임라인 */}
+        {TIMELINE.map((yearData, yi) => {
+          const isOpen = openYears[yi] !== false;
+          return (
+            <div key={yi} style={{ display: "flex", gap: 0, marginBottom: 6 }}>
+              <div style={{ display: "flex", flexDirection: "column", alignItems: "center", width: 30, flexShrink: 0 }}>
+                <div style={{
+                  width: 14, height: 14, borderRadius: "50%",
+                  background: yearData.phaseColor, boxShadow: `0 0 12px ${yearData.phaseColor}88`,
+                  flexShrink: 0, marginTop: 20, zIndex: 2,
+                }} />
+                {yi < TIMELINE.length - 1 && (
+                  <div style={{
+                    width: 2, flex: 1, minHeight: 40,
+                    background: `linear-gradient(to bottom,${yearData.phaseColor}55,${TIMELINE[yi+1].phaseColor}33)`,
+                    marginTop: 4,
+                  }} />
+                )}
+              </div>
+
+              <div style={{
+                flex: 1, background: "#0c1524",
+                border: `1px solid ${yearData.phaseColor}33`,
+                borderLeft: `3px solid ${yearData.phaseColor}`,
+                borderRadius: "0 12px 12px 0", overflow: "hidden", marginBottom: 4,
+              }}>
+                <div onClick={() => toggleYear(yi)} style={{
+                  padding: "13px 16px", cursor: "pointer",
+                  background: `linear-gradient(90deg,${yearData.phaseColor}18,transparent)`,
+                  display: "flex", justifyContent: "space-between", alignItems: "center",
+                }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                    <span style={{ fontSize: 24, fontWeight: 900, color: yearData.phaseColor, letterSpacing: -1 }}>{yearData.year}</span>
+                    <span style={{ fontSize: 13, color: "#cbd5e1", fontWeight: 500 }}>{yearData.phase}</span>
+                  </div>
+                  <span style={{ color: "#334155", fontSize: 16, transform: isOpen ? "rotate(90deg)" : "none", transition: "0.2s" }}>›</span>
+                </div>
+
+                {isOpen && (
+                  <div style={{ padding: "4px 14px 14px" }}>
+                    {yearData.periods.map((period, pi) => (
+                      <div key={pi} style={{ marginTop: 12 }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 7 }}>
+                          <span style={{
+                            fontSize: 11, fontWeight: 700,
+                            background: period.highlight ? `${yearData.phaseColor}33` : "rgba(255,255,255,0.05)",
+                            color: period.highlight ? yearData.phaseColor : "#64748b",
+                            border: `1px solid ${period.highlight ? yearData.phaseColor+"55" : "#1e3a5f"}`,
+                            padding: "2px 9px", borderRadius: 4,
+                          }}>{period.period}</span>
+                          <span style={{ fontSize: 12, color: "#475569" }}>{period.label}</span>
+                        </div>
+
+                        {period.events.map((ev, ei) => {
+                          const chain = CHAINS[ev.chain];
+                          const dimmed = activeChain && activeChain !== ev.chain;
+                          return (
+                            <div key={ei} style={{ marginBottom: 7, opacity: dimmed ? 0.2 : 1, transition: "opacity 0.2s" }}>
+                              <div style={{
+                                border: `1px solid ${chain.color}33`,
+                                borderLeft: `3px solid ${chain.color}`,
+                                borderRadius: "0 10px 10px 0", overflow: "hidden",
+                              }}>
+                                <div style={{ padding: "5px 11px 4px", background: `${chain.color}0e`, display: "flex", alignItems: "center", gap: 5 }}>
+                                  <span style={{ fontSize: 11 }}>{chain.icon}</span>
+                                  <span style={{ fontSize: 10, color: chain.color, fontWeight: 700 }}>{chain.label}</span>
+                                </div>
+                                <div style={{ padding: "8px 12px 10px" }}>
+                                  <div style={{ fontSize: 13, color: "#e2e8f0", lineHeight: 1.6, whiteSpace: "pre-line", marginBottom: (ev.why||ev.sub) ? 8 : 0 }}>
+                                    {ev.what}
+                                  </div>
+                                  {ev.why && (
+                                    <div style={{ padding: "7px 10px", background: "rgba(255,255,255,0.03)", borderRadius: 6, borderLeft: `2px solid ${chain.color}44`, marginBottom: (ev.consequence||ev.sub) ? 7 : 0 }}>
+                                      <div style={{ fontSize: 9, color: chain.color, fontWeight: 700, letterSpacing: 1, marginBottom: 3 }}>WHY · 이 시점인 이유</div>
+                                      <div style={{ fontSize: 12, color: "#94a3b8", lineHeight: 1.6, whiteSpace: "pre-line" }}>{ev.why}</div>
+                                    </div>
+                                  )}
+                                  {ev.sub && (
+                                    <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: ev.consequence ? 7 : 0 }}>
+                                      {ev.sub.map((s, si) => (
+                                        <div key={si} style={{ padding: "6px 10px", background: "rgba(59,130,246,0.1)", border: "1px solid rgba(59,130,246,0.2)", borderRadius: 8, flex: 1, minWidth: 110 }}>
+                                          <div style={{ fontSize: 12, fontWeight: 700, color: "#60a5fa", marginBottom: 3 }}>{s.acct} · {s.amount}</div>
+                                          <div style={{ fontSize: 10, color: "#475569", lineHeight: 1.4, whiteSpace: "pre-line" }}>{s.reason}</div>
+                                        </div>
+                                      ))}
+                                    </div>
+                                  )}
+                                  {ev.consequence && (
+                                    <div style={{ display: "flex", gap: 6, alignItems: "flex-start", padding: "6px 10px", background: `${chain.color}11`, borderRadius: 6 }}>
+                                      <span style={{ fontSize: 12, color: chain.color, flexShrink: 0, fontWeight: 700 }}>∴</span>
+                                      <div style={{ fontSize: 12, color: "#cbd5e1", lineHeight: 1.5, whiteSpace: "pre-line" }}>{ev.consequence}</div>
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          );
+        })}
+
+        {/* 핵심 원칙 */}
+        <div style={{ marginTop: 20, padding: "16px 18px", background: "linear-gradient(135deg,#0d1b2a,#1a2744)", border: "1px solid #1e3a5f", borderRadius: 12 }}>
+          <div style={{ fontSize: 10, color: "#60a5fa", letterSpacing: 2, marginBottom: 12, fontWeight: 700 }}>절대 잊으면 안 되는 한도·순서</div>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(2,1fr)", gap: 8 }}>
+            {[
+              { icon: "🏦", text: "연금저축 + IRP1 합산 연간 1,800만 한도\n(연금저축 1,500만 + IRP1 300만)" },
+              { icon: "💎", text: "세액공제: 연금저축 600만 + IRP1 300만 = 900만\n(납입 한도 1,800만과 별개 개념)" },
+              { icon: "🏥", text: "사적연금 연 1,500만 이내 유지\n→ 16.5% 분리과세 + 피부양자 자격 동시 보호" },
+              { icon: "🔢", text: "인출 순서: 비과세원금 → 세액공제분/수익\n→ 개인IRP(IRP1) → 퇴직IRP(IRP2)" },
+            ].map((item, i) => (
+              <div key={i} style={{ display: "flex", gap: 8, padding: "9px 11px", background: "rgba(255,255,255,0.03)", border: "1px solid #1e3a5f", borderRadius: 8 }}>
+                <span style={{ fontSize: 14, flexShrink: 0 }}>{item.icon}</span>
+                <span style={{ fontSize: 11, color: "#94a3b8", lineHeight: 1.5, whiteSpace: "pre-line" }}>{item.text}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+    ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+  </script>
+</body>
+</html>
