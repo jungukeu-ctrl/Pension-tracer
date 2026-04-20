@@ -470,7 +470,7 @@ function renderTimeline(){
       }).join('');
 
       return `
-        <div class="period-wrap${isNowPeriod ? ' now-period-wrap' : ''}">
+        <div class="period-wrap${isNowPeriod ? ' now-period-wrap' : ''}"${isNowPeriod ? ' id="current-period"' : ''}>
           <div class="period-label-row">
             <span class="period-tag" style="background:${ptag_bg};color:${ptag_c};border-color:${ptag_bc}">${isNowPeriod ? '<span class="now-dot"></span>' : ''}${pd.period}</span>
             <span class="period-desc">${pd.label}</span>
@@ -543,8 +543,11 @@ function togglePanel(id){
 renderFlow();
 renderTimeline();
 setTimeout(() => {
-  const el = document.getElementById('current-location');
-  if (el) el.scrollIntoView({behavior:'smooth', block:'start'});
+  const el = document.getElementById('current-period') || document.getElementById('current-location');
+  if (!el) return;
+  const headerH = document.getElementById('header').offsetHeight;
+  const top = el.getBoundingClientRect().top + window.scrollY - headerH - 16;
+  window.scrollTo({top: Math.max(0, top), behavior: 'smooth'});
 }, 200);
 </script>
 </body>
